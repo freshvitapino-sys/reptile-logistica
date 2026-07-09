@@ -61,7 +61,7 @@ elif menu == "Panel de Control":
     st.header("🐍 Gestión de Inventario Activo")
     
     # Filtrar reptiles por el dueño logueado
-    res = supabase.table("reptiles").select("*").eq("nombre_del_propietario", st.session_state.username).execute()
+    res = supabase.table("reptiles").select("*").eq("owner_name", st.session_state.username).execute()
     reptiles = res.data
     
     if not reptiles:
