@@ -66,33 +66,30 @@ if menu == "Nuevo Ejemplar":
             supabase.table("reptiles").insert(data).execute()
             st.success(f"Ejemplar {u_id} registrado exitosamente.")
 
-# --- PANEL DE CONTROL ---
-elif menu == "Panel de Control":
-    st.header(f"📦 Ejemplares de: {st.session_state.username}")
-    
-    # Consulta filtrada por propietario
-    res = supabase.table("reptiles").select("*").eq("owner_name", st.session_state.username).execute()
-    reptiles = res.data
-    
-    if not reptiles:
-        st.info("No tienes ejemplares registrados aún.")
-    else:
-        # Selección de ejemplar
-        options = {r['unique_id']: r for r in reptiles}
-        sel_id = st.selectbox("Selecciona un ejemplar para ver detalles:", list(options.keys()))
-        data_sel = options[sel_id]
-        
-        # Mostrar detalles
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Especie", data_sel['species'])
-        c2.metric("Sexo", data_sel['sexo'])
-        c3.metric("Peso Actual", f"{data_sel['peso']} g")
-        
-        st.subheader("📊 Historial de Alimentación / Peso")
-        # Aquí simulamos datos de historial si tu tabla de eventos existiera
-        # Si tienes una tabla 'events', la consultarías aquí igual que la de reptiles
-        historial = pd.DataFrame({'Día': ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'], 'Peso (g)': [100, 105, 103, 110, 115]})
-        st.line_chart(historial.set_index('Día'))
-        
-        with st.expander("Ver notas del ejemplar"):
-            st.write(data_sel.get('notas', 'Sin notas adicionales.'))
+# --- PANEL DE CONTROL (Copia esta parte en tu app.py) ---
+        elif menu == "Panel de Control":
+            st.header(f"📦 Ejemplares de: {st.session_state.username}")
+            
+            res = supabase.table("reptiles").select("*").eq("owner_name", st.session_state.username).execute()
+            reptiles = res.data
+            
+            if not reptiles:
+                st.info("No tienes ejemplares registrados aún.")
+            else:
+                options = {r['unique_id']: r for r in reptiles}
+                sel_id = st.selectbox("Selecciona un ejemplar:", list(options.keys()))
+                data_sel = options[sel_id]
+                
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Especie", data_sel.get('species', 'N/A'))
+                c2.metric("Sexo", data_sel.get('sex', 'N/A'))  # Aquí estaba el error
+                c3.metric("Peso", f"{data_sel.get('peso', 0)} g")
+                
+                st.subheader("📊 Historial de Crecimiento")
+                # Simulación de datos para la gráfica
+                historial = pd.DataFrame({'Día': ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'], 
+                                         'Peso (g)': [data_sel.get('peso', 0)-10, data_sel.get('peso', 0)-5, data_sel.get('peso', 0), data_sel.get('peso', 0)+2, data_sel.get('peso', 0)+5]})
+                st.line_chart(historial.set_index('Día'))
+                
+                with st.expander("Ver notas del ejemplar"):
+                    st.write(data_sel.get('notas', 'Sin notas adicionales.'))
