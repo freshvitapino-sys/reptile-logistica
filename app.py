@@ -1,90 +1,98 @@
 import streamlit as st
 import os
 from supabase import create_client
-from groq import Groq
-from datetime import datetime
+import pandas as pd
+import random
 
-# --- CONFIGURACIÓN DE SECRETOS ---
+# --- CONFIGURACIÓN ---
 def get_secret(key):
     return st.secrets[key] if key in st.secrets else os.environ.get(key)
 
-# Inicialización segura
 try:
     url = get_secret('PROJECT_URL').strip().rstrip('/')
     key = get_secret('API_SUPABASE').strip()
     supabase = create_client(url, key)
-    client = Groq(api_key=get_secret('GROQ_API_KEY'))
 except Exception:
-    st.error("⚠️ Error de configuración. Revisa tus Secrets.")
+    st.error("❌ Error conectando a la base de datos. Revisa tus Secrets.")
     st.stop()
 
-# --- INTERFAZ Y ESTILO ---
-st.set_page_config(page_title="Reptile Logistics Pro", layout="wide")
+st.set_page_config(page_title="Reptile Logistics", layout="wide")
 
-# --- LÓGICA DE LOGIN ---
+# --- LOGIN ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.title("🔒 Acceso al Sistema")
-    with st.form("login_form"):
-        username = st.text_input("Nombre del Propietario / Dueño")
-        submit = st.form_submit_button("Entrar al Dashboard")
-        if submit and username:
-            st.session_state.authenticated = True
-            st.session_state.username = username
-            st.rerun()
+    st.title("🐍 Acceso al Sistema")
+    username = st.text_input("Nombre del Propietario")
+    if st.button("Ingresar"):
+        st.session_state.authenticated = True
+        st.session_state.username = username
+        st.rerun()
     st.stop()
 
-# --- DASHBOARD PRINCIPAL ---
-st.sidebar.title(f"👤 {st.session_state.username}")
-menu = st.sidebar.radio("Navegación", ["Panel de Control", "Registrar Nuevo Ejemplar", "Cerrar Sesión"])
-
-if menu == "Cerrar Sesión":
+# --- MENÚ ---
+menu = st.sidebar.radio("Navegación", ["Panel de Control", "Nuevo Ejemplar"])
+st.sidebar.markdown(f"---")
+if st.sidebar.button("Cerrar Sesión"):
     st.session_state.authenticated = False
     st.rerun()
 
-# --- SECCIÓN: REGISTRAR NUEVO ---
-if menu == "Registrar Nuevo Ejemplar":
-    st.header("➕ Registro de Nuevo Ejemplar")
-    with st.form("new_reptile_form"):
-        u_id = st.text_input("ID Único (ej: PB0003)")
-        species = st.text_input("Especie")
-        notes = st.text_area("Notas iniciales")
-        if st.form_submit_button("Confirmar Registro"):
-            data = {"unique_id": u_id, "owner": st.session_state.username, "species": species}
+# --- REGISTRO ---
+if menu == "Nuevo Ejemplar":
+    st.header("➕ Registrar Nuevo Ejemplar")
+    with st.form("registro_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            especie = st.text_input("Especie")
+            sexo = st.selectbox("Sexo", ["Macho", "Hembra", "Desconocido"])
+        with col2:
+            peso = st.number_input("Peso Inicial (g)", min_value=0.0)
+            fecha_nacimiento = st.date_input("Fecha de Nacimiento / Adquisición")
+        
+        notas = st.text_area("Notas / Historial Médico")
+        
+        if st.form_submit_button("Registrar"):
+            # Generación automática de ID: Especie + num random
+            u_id = f"{especie[:2].upper()}-{random.randint(1000, 9999)}"
+            data = {
+                "unique_id": u_id,
+                "owner_name": st.session_state.username,
+                "species": especie,
+                "sexo": sexo,
+                "peso": peso,
+                "notas": notas
+            }
             supabase.table("reptiles").insert(data).execute()
-            st.success(f"¡{u_id} registrado con éxito!")
+            st.success(f"Ejemplar {u_id} registrado exitosamente.")
 
-# --- SECCIÓN: PANEL DE CONTROL (Visualización) ---
+# --- PANEL DE CONTROL ---
 elif menu == "Panel de Control":
-    st.header("🐍 Gestión de Inventario Activo")
+    st.header(f"📦 Ejemplares de: {st.session_state.username}")
     
-    # Filtrar reptiles por el dueño logueado
+    # Consulta filtrada por propietario
     res = supabase.table("reptiles").select("*").eq("owner_name", st.session_state.username).execute()
     reptiles = res.data
     
     if not reptiles:
-        st.info("No tienes ejemplares registrados aún. Ve a 'Registrar Nuevo Ejemplar'.")
+        st.info("No tienes ejemplares registrados aún.")
     else:
-        options = {r['unique_id']: r['id'] for r in reptiles}
-        selected_id = st.sidebar.selectbox("Selecciona un ejemplar", list(options.keys()))
-        reptil_id = options[selected_id]
-
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            st.subheader(f"Métricas: {selected_id}")
-            peso = st.number_input("Nuevo peso (g)", min_value=0.0)
-            if st.button("Guardar Peso"):
-                supabase.table("events").insert({"reptile_id": reptil_id, "event_type": "peso", "value_numeric": peso}).execute()
-                st.toast("✅ Peso actualizado")
-
-        with col2:
-            st.subheader("Análisis de Salud IA")
-            if st.button("Consultar Llama 3"):
-                with st.spinner("Analizando tendencias..."):
-                    chat = client.chat.completions.create(
-                        messages=[{"role": "user", "content": f"El reptil {selected_id} de {st.session_state.username} registró {peso}g. ¿Alguna recomendación?"}],
-                        model="llama-3.3-70b-versatile",
-                    )
-                    st.info(chat.choices[0].message.content)
+        # Selección de ejemplar
+        options = {r['unique_id']: r for r in reptiles}
+        sel_id = st.selectbox("Selecciona un ejemplar para ver detalles:", list(options.keys()))
+        data_sel = options[sel_id]
+        
+        # Mostrar detalles
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Especie", data_sel['species'])
+        c2.metric("Sexo", data_sel['sexo'])
+        c3.metric("Peso Actual", f"{data_sel['peso']} g")
+        
+        st.subheader("📊 Historial de Alimentación / Peso")
+        # Aquí simulamos datos de historial si tu tabla de eventos existiera
+        # Si tienes una tabla 'events', la consultarías aquí igual que la de reptiles
+        historial = pd.DataFrame({'Día': ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'], 'Peso (g)': [100, 105, 103, 110, 115]})
+        st.line_chart(historial.set_index('Día'))
+        
+        with st.expander("Ver notas del ejemplar"):
+            st.write(data_sel.get('notas', 'Sin notas adicionales.'))
