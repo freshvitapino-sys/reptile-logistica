@@ -6,7 +6,6 @@ import random
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
-import calendar
 
 # ---------- CONFIGURACIÓN DE PÁGINA ----------
 st.set_page_config(
@@ -16,201 +15,126 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- ESTILOS CSS MEJORADOS PARA ALTO CONTRASTE ----------
+# ---------- ESTILOS CSS PARA TEMA OSCURO Y ALTO CONTRASTE ----------
 st.markdown("""
 <style>
-    /* Fondo general claro pero con buen contraste */
+    /* Fondo general oscuro */
     .stApp {
-        background-color: #f0f2f6;
+        background-color: #0e1117;
     }
-    /* Barra lateral con fondo oscuro y texto blanco */
-    section[data-testid="stSidebar"] {
-        background-color: #1e293b !important;
-        color: #ffffff !important;
+    /* Fondo de la barra lateral */
+    .css-1d391kg, .stSidebar {
+        background-color: #1e2229;
     }
-    section[data-testid="stSidebar"] .stMarkdown, 
-    section[data-testid="stSidebar"] .stSelectbox label,
-    section[data-testid="stSidebar"] .stRadio label,
-    section[data-testid="stSidebar"] .stTextInput label,
-    section[data-testid="stSidebar"] .stButton button {
-        color: #ffffff !important;
-    }
-    section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
-        background-color: #334155 !important;
-        color: #ffffff !important;
-    }
-    section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] {
-        background-color: #334155 !important;
-        border-radius: 8px;
-        padding: 0.5rem;
-    }
-    section[data-testid="stSidebar"] .stRadio label {
-        color: #e2e8f0 !important;
-    }
-    section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] div {
-        background-color: transparent !important;
-    }
-    /* Botones en la barra lateral */
-    section[data-testid="stSidebar"] .stButton button {
-        background-color: #2e7d32 !important;
-        color: #ffffff !important;
-        border: none;
-        border-radius: 6px;
-        padding: 0.5rem 1rem;
-        font-weight: bold;
-    }
-    section[data-testid="stSidebar"] .stButton button:hover {
-        background-color: #1b5e20 !important;
-    }
-    /* Área principal: fondo claro, texto oscuro */
-    .main .block-container {
-        background-color: #ffffff;
-        padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    /* Títulos */
-    h1, h2, h3, h4, h5, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-        color: #0f172a !important;
-        font-weight: 600;
-    }
-    /* Texto general */
-    .stMarkdown, p, div, span, label {
-        color: #1e293b !important;
+    /* Tarjetas y contenedores */
+    .stAlert, .stForm, .stSelectbox, .stTextInput, .stNumberInput, .stDataFrame, .stMarkdown {
+        background-color: #262b33;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        color: #eaeef2;
     }
     /* Métricas */
     div[data-testid="metric-container"] {
-        background-color: #f8fafc;
+        background-color: #1e2229;
         border-radius: 8px;
         padding: 1rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        border-left: 4px solid #2e7d32;
+        border-left: 4px solid #4caf50;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
     div[data-testid="metric-container"] label {
-        color: #475569 !important;
-        font-weight: 500;
+        color: #b0bec5 !important;
     }
-    div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
-        color: #0f172a !important;
-        font-size: 1.5rem;
-        font-weight: 700;
-    }
-    /* Selectores, inputs, textareas */
-    .stSelectbox div[data-baseweb="select"] {
-        background-color: #ffffff;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-    }
-    .stTextInput input, .stNumberInput input, .stTextArea textarea {
-        background-color: #ffffff;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        color: #0f172a;
-    }
-    .stTextInput input:focus, .stNumberInput input:focus, .stTextArea textarea:focus {
-        border-color: #2e7d32;
-        box-shadow: 0 0 0 2px rgba(46,125,50,0.2);
-    }
-    /* Botones principales */
-    .stButton button {
-        background-color: #2e7d32 !important;
+    div[data-testid="metric-container"] div {
         color: #ffffff !important;
+    }
+    /* Botones */
+    .stButton > button {
+        background-color: #4caf50;
+        color: white;
         border: none;
-        border-radius: 6px;
-        padding: 0.5rem 1.5rem;
-        font-weight: 600;
-        transition: background-color 0.2s;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+        transition: 0.3s;
     }
-    .stButton button:hover {
-        background-color: #1b5e20 !important;
+    .stButton > button:hover {
+        background-color: #388e3c;
+        color: white;
+    }
+    /* Títulos y textos */
+    h1, h2, h3, h4, h5, p, li, label {
+        color: #eaeef2 !important;
+    }
+    .stSidebar .stRadio label {
+        color: #b0bec5 !important;
+    }
+    .stSidebar .stRadio div[role="radiogroup"] label {
+        background-color: #2a2f39;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        margin: 2px 0;
         color: #ffffff !important;
     }
-    .stButton button:focus {
-        box-shadow: 0 0 0 2px rgba(46,125,50,0.4);
+    .stSidebar .stRadio div[role="radiogroup"] label:hover {
+        background-color: #3a4050;
     }
-    /* Alertas */
+    .stSidebar .stRadio div[role="radiogroup"] label[data-selected="true"] {
+        background-color: #4caf50;
+        color: white !important;
+    }
+    /* Selectbox y otros inputs */
+    .stSelectbox > div > div, .stTextInput > div > div, .stNumberInput > div > div {
+        background-color: #2a2f39;
+        color: #eaeef2;
+        border-radius: 6px;
+        border: 1px solid #3a4050;
+    }
+    .stSelectbox > div > div:hover, .stTextInput > div > div:hover, .stNumberInput > div > div:hover {
+        border-color: #4caf50;
+    }
+    /* Dataframe */
+    .stDataFrame {
+        background-color: #1e2229;
+    }
+    .stDataFrame table {
+        color: #eaeef2;
+    }
+    /* Mensajes de éxito/error/info */
     .stAlert {
-        border-radius: 8px;
-        border-left: 4px solid #2e7d32;
+        background-color: #2a2f39;
+        border-left: 4px solid #4caf50;
     }
-    .stAlert .stMarkdown {
-        color: #0f172a !important;
+    .stAlert.error {
+        border-left-color: #f44336;
+    }
+    .stAlert.warning {
+        border-left-color: #ff9800;
+    }
+    .stAlert.info {
+        border-left-color: #2196f3;
+    }
+    /* Barra de progreso */
+    .stProgress > div > div > div {
+        background-color: #4caf50;
     }
     /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
-        background-color: #f1f5f9;
+        background-color: #1e2229;
+        padding: 0.5rem;
         border-radius: 8px;
-        padding: 4px;
     }
     .stTabs [data-baseweb="tab"] {
+        background-color: #2a2f39;
+        color: #b0bec5;
         border-radius: 6px;
         padding: 0.5rem 1rem;
-        color: #475569;
-        font-weight: 500;
-        background-color: transparent;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #2e7d32 !important;
-        color: #ffffff !important;
-    }
-    /* Dataframes */
-    .stDataFrame {
-        background-color: #ffffff;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-    }
-    /* Badges personalizados */
-    .badge-warning {
-        background-color: #fff3cd;
-        color: #856404;
-        padding: 0.2rem 0.6rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
         font-weight: bold;
     }
-    .badge-danger {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 0.2rem 0.6rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: bold;
-    }
-    .badge-success {
-        background-color: #d4edda;
-        color: #155724;
-        padding: 0.2rem 0.6rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: bold;
-    }
-    /* Ajustes de contraste en selectores de la barra lateral */
-    section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {
-        color: #ffffff !important;
-    }
-    section[data-testid="stSidebar"] .stSelectbox svg {
-        fill: #ffffff !important;
-    }
-    /* Mejora de contraste en el radio de la barra lateral */
-    section[data-testid="stSidebar"] .stRadio label span {
-        color: #e2e8f0 !important;
-        font-weight: 400;
-    }
-    section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[data-testid="stRadio"] {
-        margin-bottom: 0.25rem;
-    }
-    /* Título de la barra lateral */
-    section[data-testid="stSidebar"] h1, 
-    section[data-testid="stSidebar"] h2, 
-    section[data-testid="stSidebar"] h3, 
-    section[data-testid="stSidebar"] .stMarkdown h1,
-    section[data-testid="stSidebar"] .stMarkdown h2,
-    section[data-testid="stSidebar"] .stMarkdown h3 {
-        color: #ffffff !important;
-    }
-    section[data-testid="stSidebar"] .stImage {
-        background-color: transparent;
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background-color: #4caf50;
+        color: white;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -224,7 +148,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO ----------
+# ---------- BASE DE CONOCIMIENTO DE ESPECIES ----------
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -298,7 +222,7 @@ DEFAULT_SPECIES = {
     "notes": "Sin información adicional."
 }
 
-# ---------- FUNCIONES SEGURAS ----------
+# ---------- FUNCIONES AUXILIARES CON MANEJO DE NULOS ----------
 def get_species_info(species_name):
     return SPECIES_DB.get(species_name, DEFAULT_SPECIES)
 
@@ -310,6 +234,15 @@ def safe_days_between(date_str):
     except:
         pass
     return None
+
+def safe_int(value, default=0):
+    """Convierte a entero, devuelve default si es None o no convertible."""
+    try:
+        if value is None:
+            return default
+        return int(value)
+    except (ValueError, TypeError):
+        return default
 
 # ---------- AUTENTICACIÓN ----------
 if "authenticated" not in st.session_state:
@@ -332,7 +265,7 @@ if not st.session_state.authenticated:
 # ---------- BARRA LATERAL ----------
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/000000/snake.png", width=80)
-    st.markdown(f"### 👤 {st.session_state.username}")
+    st.title(f"👤 {st.session_state.username}")
     st.divider()
     menu = st.radio(
         "📌 Módulos",
@@ -363,9 +296,12 @@ def get_events(table_name, unique_id):
         return []
 
 # ---------- PÁGINAS ----------
+
+# ---- PANEL DE CONTROL ----
 if menu == "📊 Panel de Control":
     st.header("📊 Panel de Control")
     reptiles = get_reptiles(st.session_state.username)
+    
     if not reptiles:
         st.info("No hay ejemplares registrados. Ve a 'Nuevo Ejemplar' para agregar uno.")
     else:
@@ -373,99 +309,113 @@ if menu == "📊 Panel de Control":
         selected_key = st.selectbox("🔍 Selecciona un ejemplar", list(opciones.keys()))
         item = opciones[selected_key]
         unique_id = item['unique_id']
+        
         species_name = item.get('species', '')
         species_info = get_species_info(species_name)
+        
         alimentacion = get_events("alimentacion", unique_id)
         muda = get_events("muda", unique_id)
         veterinario = get_events("veterinario", unique_id)
-
+        
+        # ---- Métricas superiores (con valores seguros) ----
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("🐍 Especie", species_name if species_name else "Desconocida")
         with col2:
-            st.metric("⚖️ Peso actual", f"{item.get('peso', 0)} g")
+            peso = safe_int(item.get('peso'))
+            st.metric("⚖️ Peso actual", f"{peso} g")
         with col3:
-            if alimentacion:
+            if alimentacion and len(alimentacion) > 0:
                 last_feed = alimentacion[0].get('fecha')
                 days = safe_days_between(last_feed)
                 st.metric("🍽️ Última alimentación", f"Hace {days} días" if days is not None else "N/A")
             else:
                 st.metric("🍽️ Última alimentación", "Sin registros")
         with col4:
-            if muda:
+            if muda and len(muda) > 0:
                 last_shed = muda[0].get('fecha')
                 days = safe_days_between(last_shed)
                 st.metric("🔄 Última muda", f"Hace {days} días" if days is not None else "N/A")
             else:
                 st.metric("🔄 Última muda", "Sin registros")
-
-        st.divider()
-        st.subheader("🧠 Recomendaciones personalizadas")
-        col_rec1, col_rec2 = st.columns([2, 1])
-        with col_rec1:
-            feed_interval = species_info.get("feed_interval", 7)
-            if alimentacion:
-                last_feed_date_str = alimentacion[0].get('fecha')
-                try:
-                    last_feed_date = datetime.strptime(last_feed_date_str[:10], "%Y-%m-%d")
-                    next_feed_recommended = last_feed_date + timedelta(days=feed_interval)
-                    days_until = (next_feed_recommended - datetime.now()).days
-                    if days_until <= 0:
-                        st.error(f"⚠️ **Alerta de alimentación**: ¡Han pasado {abs(days_until)} días desde la fecha recomendada para {species_name}! 🍽️")
-                    else:
-                        st.success(f"✅ Próxima alimentación recomendada en {days_until} días (según especie {species_name})")
-                except:
-                    st.info("ℹ️ No se pudo calcular la próxima alimentación.")
-            else:
-                st.info(f"ℹ️ Según la especie {species_name}, se recomienda alimentar cada {feed_interval} días. Registra la primera alimentación.")
-            
-            shed_interval = species_info.get("shed_interval", 30)
-            if muda:
-                last_shed_date_str = muda[0].get('fecha')
-                try:
-                    last_shed_date = datetime.strptime(last_shed_date_str[:10], "%Y-%m-%d")
-                    next_shed_estimated = last_shed_date + timedelta(days=shed_interval)
-                    days_until_shed = (next_shed_estimated - datetime.now()).days
-                    if days_until_shed <= 0:
-                        st.warning(f"🔄 Posible muda inminente (han pasado {abs(days_until_shed)} días desde el intervalo esperado).")
-                    else:
-                        st.info(f"🔄 Próxima muda estimada en {days_until_shed} días.")
-                except:
-                    st.info("ℹ️ No se pudo calcular la próxima muda.")
-            else:
-                st.info(f"ℹ️ La especie {species_name} suele mudar cada {shed_interval} días aproximadamente.")
-            
-            temp_min, temp_max = species_info.get("temp_range", (25, 30))
-            hum = species_info.get("humidity", 50)
-            st.write(f"🌡️ **Condiciones ideales**: {temp_min}°C - {temp_max}°C, humedad ~{hum}%.")
-            st.write(f"🍽️ **Dieta recomendada**: {species_info.get('diet', 'N/A')}")
-            st.write(f"🏠 **Terrario**: {species_info.get('enclosure', 'N/A')}")
-            st.write(f"📝 **Notas**: {species_info.get('notes', '')}")
         
-        with col_rec2:
-            adult_weight = species_info.get("adult_weight", 1000)
-            current_weight = item.get('peso', 0)
-            if current_weight > 0:
-                progress = min(current_weight / adult_weight, 1.0)
-                st.metric("📈 Progreso de peso", f"{current_weight}g / {adult_weight}g")
-                st.progress(progress, text=f"{progress*100:.1f}% del peso adulto")
-            else:
-                st.info("Registra el peso para ver el progreso.")
-            all_dates = []
-            for ev in alimentacion + muda + veterinario:
-                if 'fecha' in ev and ev['fecha']:
-                    all_dates.append(ev['fecha'])
-            if all_dates:
-                first_date = min(all_dates)
-                days_old = safe_days_between(first_date)
-                if days_old is not None:
-                    st.metric("📅 Edad estimada", f"{days_old // 30} meses" if days_old < 365 else f"{days_old // 365} años")
-            else:
-                st.info("🕒 Edad no disponible (sin eventos).")
-
         st.divider()
+        
+        # ---- Recomendaciones IA (con valores seguros) ----
+        st.subheader("🧠 Recomendaciones personalizadas")
+        with st.container():
+            col_rec1, col_rec2 = st.columns([2, 1])
+            with col_rec1:
+                # Alimentación
+                feed_interval = species_info.get("feed_interval", 7)
+                if alimentacion and len(alimentacion) > 0:
+                    last_feed_date_str = alimentacion[0].get('fecha')
+                    try:
+                        last_feed_date = datetime.strptime(last_feed_date_str[:10], "%Y-%m-%d")
+                        next_feed_recommended = last_feed_date + timedelta(days=feed_interval)
+                        days_until = (next_feed_recommended - datetime.now()).days
+                        if days_until <= 0:
+                            st.error(f"⚠️ **Alerta de alimentación**: ¡Han pasado {abs(days_until)} días desde la fecha recomendada para {species_name}! 🍽️")
+                        else:
+                            st.success(f"✅ Próxima alimentación recomendada en {days_until} días (según especie {species_name})")
+                    except:
+                        st.info("ℹ️ No se pudo calcular la próxima alimentación (fecha inválida).")
+                else:
+                    st.info(f"ℹ️ Según la especie {species_name}, se recomienda alimentar cada {feed_interval} días. Registra la primera alimentación.")
+                
+                # Muda
+                shed_interval = species_info.get("shed_interval", 30)
+                if muda and len(muda) > 0:
+                    last_shed_date_str = muda[0].get('fecha')
+                    try:
+                        last_shed_date = datetime.strptime(last_shed_date_str[:10], "%Y-%m-%d")
+                        next_shed_estimated = last_shed_date + timedelta(days=shed_interval)
+                        days_until_shed = (next_shed_estimated - datetime.now()).days
+                        if days_until_shed <= 0:
+                            st.warning(f"🔄 Posible muda inminente (han pasado {abs(days_until_shed)} días desde el intervalo esperado).")
+                        else:
+                            st.info(f"🔄 Próxima muda estimada en {days_until_shed} días.")
+                    except:
+                        st.info("ℹ️ No se pudo calcular la próxima muda (fecha inválida).")
+                else:
+                    st.info(f"ℹ️ La especie {species_name} suele mudar cada {shed_interval} días aproximadamente.")
+                
+                # Condiciones
+                temp_min, temp_max = species_info.get("temp_range", (25, 30))
+                hum = species_info.get("humidity", 50)
+                st.write(f"🌡️ **Condiciones ideales**: {temp_min}°C - {temp_max}°C, humedad ~{hum}%.")
+                st.write(f"🍽️ **Dieta recomendada**: {species_info.get('diet', 'N/A')}")
+                st.write(f"🏠 **Terrario**: {species_info.get('enclosure', 'N/A')}")
+                st.write(f"📝 **Notas**: {species_info.get('notes', '')}")
+            
+            with col_rec2:
+                adult_weight = species_info.get("adult_weight", 1000)
+                current_weight = safe_int(item.get('peso'))  # <--- CORREGIDO
+                if current_weight > 0:
+                    progress = min(current_weight / adult_weight, 1.0)
+                    st.metric("📈 Progreso de peso", f"{current_weight}g / {adult_weight}g")
+                    st.progress(progress, text=f"{progress*100:.1f}% del peso adulto")
+                else:
+                    st.info("Registra el peso para ver el progreso.")
+                
+                # Edad estimada
+                all_dates = []
+                for ev in alimentacion + muda + veterinario:
+                    if 'fecha' in ev and ev['fecha']:
+                        all_dates.append(ev['fecha'])
+                if all_dates:
+                    first_date = min(all_dates)
+                    days_old = safe_days_between(first_date)
+                    if days_old is not None:
+                        st.metric("📅 Edad estimada", f"{days_old // 30} meses" if days_old < 365 else f"{days_old // 365} años")
+                else:
+                    st.info("🕒 Edad no disponible (sin eventos).")
+        
+        st.divider()
+        
+        # ---- Gráfico de peso ----
         st.subheader("📈 Evolución de peso")
-        if alimentacion:
+        if alimentacion and len(alimentacion) > 0:
             try:
                 df_alim = pd.DataFrame(alimentacion)
                 if 'peso_alimento' in df_alim.columns and not df_alim['peso_alimento'].isnull().all():
@@ -474,6 +424,7 @@ if menu == "📊 Panel de Control":
                     fig = px.line(df_alim, x='fecha', y='peso_alimento', 
                                  title='Evolución del peso registrado en alimentaciones',
                                  labels={'peso_alimento': 'Peso (g)', 'fecha': 'Fecha'})
+                    fig.update_layout(template='plotly_dark')
                     st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.info("No hay datos de peso en los registros de alimentación.")
@@ -481,9 +432,11 @@ if menu == "📊 Panel de Control":
                 st.info(f"No se pudo generar el gráfico: {str(e)}")
         else:
             st.info("Registra alimentaciones para ver la evolución del peso.")
-
+        
+        # ---- Historial (tabs) ----
         st.subheader("📋 Historial completo")
         tabs = st.tabs(["🍽️ Alimentación", "🔄 Muda", "🏥 Veterinario"])
+        
         with tabs[0]:
             if alimentacion:
                 df = pd.DataFrame(alimentacion)
@@ -495,6 +448,7 @@ if menu == "📊 Panel de Control":
                 st.download_button("📥 Descargar CSV", data=csv, file_name=f"alimentacion_{unique_id}.csv", mime="text/csv")
             else:
                 st.info("Sin registros de alimentación.")
+        
         with tabs[1]:
             if muda:
                 df = pd.DataFrame(muda)
@@ -506,6 +460,7 @@ if menu == "📊 Panel de Control":
                 st.download_button("📥 Descargar CSV", data=csv, file_name=f"muda_{unique_id}.csv", mime="text/csv")
             else:
                 st.info("Sin registros de muda.")
+        
         with tabs[2]:
             if veterinario:
                 df = pd.DataFrame(veterinario)
@@ -658,22 +613,30 @@ elif menu == "📈 Estadísticas Globales":
     else:
         total = len(reptiles)
         st.metric("📊 Total de ejemplares", total)
+        
         df_species = pd.DataFrame(reptiles)
         if 'species' in df_species.columns:
             species_counts = df_species['species'].value_counts().reset_index()
             species_counts.columns = ['Especie', 'Cantidad']
             fig = px.bar(species_counts, x='Especie', y='Cantidad', title='Distribución por especie')
+            fig.update_layout(template='plotly_dark')
             st.plotly_chart(fig, use_container_width=True)
+        
         if 'sex' in df_species.columns:
             sex_counts = df_species['sex'].value_counts().reset_index()
             sex_counts.columns = ['Sexo', 'Cantidad']
             fig2 = px.pie(sex_counts, names='Sexo', values='Cantidad', title='Proporción por sexo')
+            fig2.update_layout(template='plotly_dark')
             st.plotly_chart(fig2, use_container_width=True)
+        
         if 'peso' in df_species.columns and 'species' in df_species.columns:
             avg_weight = df_species.groupby('species')['peso'].mean().reset_index()
             avg_weight.columns = ['Especie', 'Peso promedio (g)']
             fig3 = px.bar(avg_weight, x='Especie', y='Peso promedio (g)', title='Peso promedio por especie')
+            fig3.update_layout(template='plotly_dark')
             st.plotly_chart(fig3, use_container_width=True)
+        
+        # Actividad reciente
         st.subheader("📅 Actividad reciente")
         all_events = []
         for table in ["alimentacion", "muda", "veterinario"]:
@@ -696,6 +659,7 @@ elif menu == "📈 Estadísticas Globales":
                 fig4 = px.bar(monthly, x='mes', y='count', color='tipo', 
                              title='Eventos por mes y tipo',
                              labels={'mes': 'Mes', 'count': 'Número de eventos'})
+                fig4.update_layout(template='plotly_dark')
                 st.plotly_chart(fig4, use_container_width=True)
             else:
                 st.info("No hay eventos con fechas válidas.")
