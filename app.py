@@ -30,14 +30,14 @@ if st.sidebar.button("Cerrar Sesión"):
     st.session_state.authenticated = False
     st.rerun()
 
-# --- LÓGICA DE EVENTOS ---
+# --- LÓGICA DE REGISTRO DE EVENTOS ---
 if menu in ["Alimentación", "Muda", "Veterinario"]:
     st.header(f"📝 Registro: {menu}")
     tabla_map = {"Alimentación": "alimentacion", "Muda": "muda", "Veterinario": "veterinario"}
     target_table = tabla_map[menu]
     
     res = supabase.table("reptiles").select("unique_id, name").eq("owner_name", st.session_state.username).execute()
-    reptiles = {f"{r['unique_id']} - {r['name']}": r['unique_id'] for r in res.data}
+    reptiles = {f"{r['unique_id']} - {r['name'] if r['name'] else 'Sin Nombre'}": r['unique_id'] for r in res.data}
     
     if not reptiles: st.warning("Primero registra un ejemplar.")
     else:
@@ -50,7 +50,7 @@ if menu in ["Alimentación", "Muda", "Veterinario"]:
             elif menu == "Muda": comentarios = st.text_area("Notas de Muda")
             else: evaluacion = st.text_area("Evaluación Médica")
             
-            if st.form_submit_button("Guardar"):
+            if st.form_submit_button("Guardar Registro"):
                 data = {"unique_id": reptiles[sel_id], "owner_name": st.session_state.username, "fecha": str(fecha)}
                 if menu == "Alimentación": data.update({"tipo_alimento": tipo, "peso_alimento": int(peso)})
                 elif menu == "Muda": data.update({"comentarios": comentarios})
@@ -69,26 +69,32 @@ elif menu == "Panel de Control":
     
     if not res.data: st.info("No hay ejemplares registrados.")
     else:
-        opciones = {f"{r['unique_id']} - {r['name']}": r for r in res.data}
+        opciones = {f"{r['unique_id']} - {r.get('name', 'Sin nombre')}": r for r in res.data}
         sel = st.selectbox("Selecciona Ejemplar", list(opciones.keys()))
         item = opciones[sel]
         
-        c1, c2, c3 = st.columns(3)
+        c1, c2 = st.columns(2)
         c1.metric("Especie", item.get('species', 'N/A'))
-        c2.metric("Sexo", item.get('sex', 'N/A'))
-        c3.metric("Peso", f"{item.get('peso', 0)}g")
+        c2.metric("Peso", f"{item.get('peso', 0)}g")
         
+        # Alerta de Alimentación con IA Básica
+        hist_alim = supabase.table("alimentacion").select("*").eq("unique_id", item['unique_id']).order("fecha", desc=True).limit(1).execute()
+        if hist_alim.data:
+            dias_pasados = (pd.Timestamp.now() - pd.to_datetime(hist_alim.data[0]['fecha'])).days
+            if dias_pasados >= 3: st.error(f"⚠️ ¡Alerta! Última alimentación hace {dias_pasados} días.")
+            else: st.success(f"✅ Alimentación al día (hace {dias_pasados} días).")
+        
+        # Tabs de Historial
         tabs = st.tabs(["Información", "Alimentación", "Muda", "Veterinario"])
         with tabs[0]:
             st.write(f"**Pedimento:** {item.get('pedimento', 'N/A')}")
             st.write(f"**Notas:** {item.get('notas', 'N/A')}")
         
-        # Historial relacional
         for i, tabla in enumerate(["alimentacion", "muda", "veterinario"]):
             with tabs[i+1]:
-                hist = supabase.table(tabla).select("*").eq("unique_id", item['unique_id']).execute()
-                if hist.data: st.table(pd.DataFrame(hist.data))
-                else: st.info(f"Sin registros de {tabla}.")
+                hist = supabase.table(tabla).select("*").eq("unique_id", item['unique_id']).order("fecha", desc=True).execute()
+                if hist.data: st.dataframe(pd.DataFrame(hist.data).drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore'), use_container_width=True)
+                else: st.info(f"Sin registros en {tabla}.")
 
 # --- REGISTRO DE EJEMPLAR ---
 elif menu == "Nuevo Ejemplar":
@@ -96,7 +102,7 @@ elif menu == "Nuevo Ejemplar":
     with st.form("new_reptile"):
         col1, col2 = st.columns(2)
         name = col1.text_input("Nombre"); species = col1.text_input("Especie")
-        sex = col1.selectbox("Sexo", ["Macho", "Hembra"])
+        sex = col1.selectbox("Sexo", ["Macho", "Hembra", "Desconocido"])
         pedimento = col2.text_input("Pedimento"); peso = col2.number_input("Peso (g)", min_value=0)
         notas = st.text_area("Notas")
         if st.form_submit_button("Guardar"):
