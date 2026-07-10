@@ -30,9 +30,12 @@ if st.sidebar.button("Cerrar Sesión"):
     st.session_state.authenticated = False
     st.rerun()
 
-# --- LÓGICA DE REGISTRO DE EVENTOS ---
+# --- LÓGICA DE EVENTOS ---
 if menu in ["Alimentación", "Muda", "Veterinario"]:
     st.header(f"📝 Registro: {menu}")
+    tabla_map = {"Alimentación": "alimentacion", "Muda": "muda", "Veterinario": "veterinario"}
+    target_table = tabla_map[menu]
+    
     res = supabase.table("reptiles").select("unique_id, name").eq("owner_name", st.session_state.username).execute()
     reptiles = {f"{r['unique_id']} - {r['name']}": r['unique_id'] for r in res.data}
     
@@ -42,17 +45,22 @@ if menu in ["Alimentación", "Muda", "Veterinario"]:
         with st.form("event_form"):
             fecha = st.date_input("Fecha")
             if menu == "Alimentación":
-                tipo = st.text_input("Alimento"); peso = st.number_input("Peso (g)")
+                tipo = st.text_input("Alimento")
+                peso = st.number_input("Peso (g)", min_value=0)
             elif menu == "Muda": comentarios = st.text_area("Notas de Muda")
             else: evaluacion = st.text_area("Evaluación Médica")
             
-            if st.form_submit_button("Guardar Registro"):
+            if st.form_submit_button("Guardar"):
                 data = {"unique_id": reptiles[sel_id], "owner_name": st.session_state.username, "fecha": str(fecha)}
-                if menu == "Alimentación": data.update({"tipo_alimento": tipo, "peso_alimento": peso})
+                if menu == "Alimentación": data.update({"tipo_alimento": tipo, "peso_alimento": int(peso)})
                 elif menu == "Muda": data.update({"comentarios": comentarios})
                 else: data.update({"evaluacion_medica": evaluacion})
-                supabase.table(menu.lower()).insert(data).execute()
-                st.success(f"Evento de {menu} guardado.")
+                
+                try:
+                    supabase.table(target_table).insert(data).execute()
+                    st.success(f"Evento de {menu} guardado.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
 # --- PANEL DE CONTROL ---
 elif menu == "Panel de Control":
@@ -65,23 +73,22 @@ elif menu == "Panel de Control":
         sel = st.selectbox("Selecciona Ejemplar", list(opciones.keys()))
         item = opciones[sel]
         
-        # Métricas
         c1, c2, c3 = st.columns(3)
         c1.metric("Especie", item.get('species', 'N/A'))
         c2.metric("Sexo", item.get('sex', 'N/A'))
         c3.metric("Peso", f"{item.get('peso', 0)}g")
         
-        # Historial con Tabs
-        tabs = st.tabs(["Información Legal", "Alimentación", "Muda", "Veterinario"])
+        tabs = st.tabs(["Información", "Alimentación", "Muda", "Veterinario"])
         with tabs[0]:
             st.write(f"**Pedimento:** {item.get('pedimento', 'N/A')}")
             st.write(f"**Notas:** {item.get('notas', 'N/A')}")
-            
+        
+        # Historial relacional
         for i, tabla in enumerate(["alimentacion", "muda", "veterinario"]):
             with tabs[i+1]:
                 hist = supabase.table(tabla).select("*").eq("unique_id", item['unique_id']).execute()
                 if hist.data: st.table(pd.DataFrame(hist.data))
-                else: st.write("Sin registros.")
+                else: st.info(f"Sin registros de {tabla}.")
 
 # --- REGISTRO DE EJEMPLAR ---
 elif menu == "Nuevo Ejemplar":
@@ -90,10 +97,11 @@ elif menu == "Nuevo Ejemplar":
         col1, col2 = st.columns(2)
         name = col1.text_input("Nombre"); species = col1.text_input("Especie")
         sex = col1.selectbox("Sexo", ["Macho", "Hembra"])
-        pedimento = col2.text_input("Pedimento"); peso = col2.number_input("Peso (g)")
+        pedimento = col2.text_input("Pedimento"); peso = col2.number_input("Peso (g)", min_value=0)
         notas = st.text_area("Notas")
         if st.form_submit_button("Guardar"):
             u_id = f"{species[:2].upper()}-{random.randint(1000, 9999)}"
-            data = {"name": name, "species": species, "owner_name": st.session_state.username, "sex": sex, "unique_id": u_id, "pedimento": pedimento, "peso": peso, "notas": notas}
+            data = {"name": name, "species": species, "owner_name": st.session_state.username, "sex": sex, 
+                    "unique_id": u_id, "pedimento": pedimento, "peso": int(peso), "notas": notas}
             supabase.table("reptiles").insert(data).execute()
-            st.success("Ejemplar registrado.")
+            st.success(f"Ejemplar {u_id} registrado.")
