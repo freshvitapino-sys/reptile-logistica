@@ -247,23 +247,10 @@ def estimate_age(current_weight, species_info):
     proportion = (current_weight - birth_weight) / (adult_weight - birth_weight)
     return round(proportion * months_to_adult, 1)
 
-# ---------- CLASIFICACIÓN DE ALIMENTOS ----------
-FOOD_CATEGORIES = {
-    'insecto': ['grillo', 'tenebrio', 'gusano', 'cucaracha', 'langosta', 'saltamontes', 'mosca', 'larva'],
-    'verdura': ['lechuga', 'zanahoria', 'calabacín', 'pepino', 'pimiento', 'brócoli', 'col', 'espinaca', 'acelga', 'berza', 'diente de león'],
-    'fruta': ['manzana', 'plátano', 'fresa', 'mango', 'papaya', 'pera', 'melón', 'sandía', 'kiwi', 'uva', 'arándano']
-}
-
-def classify_food(food_text):
-    if not food_text:
-        return 'desconocido'
-    food_lower = food_text.lower()
-    for categoria, keywords in FOOD_CATEGORIES.items():
-        for kw in keywords:
-            if kw in food_lower:
-                return categoria
-    return 'otro'
-
+'insecto': [
+    ...,
+    'camarón', 'langostino', 'krill'
+],
 # ---------- AUTENTICACIÓN ----------
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
