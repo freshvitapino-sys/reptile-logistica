@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- ESTILOS CSS PARA TEMA OSCURO Y ALTO CONTRASTE ----------
+# ---------- ESTILOS CSS (tema oscuro de alto contraste) ----------
 st.markdown("""
 <style>
     .stApp { background-color: #0e1117; }
@@ -105,7 +105,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO DE ESPECIES ----------
+# ---------- BASE DE CONOCIMIENTO DE ESPECIES (CON DATOS DE CRECIMIENTO) ----------
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -115,7 +115,9 @@ SPECIES_DB = {
         "shed_interval": 45,
         "diet": "Roedores (ratas, ratones)",
         "enclosure": "Terrario de 120x60x60 cm",
-        "notes": "Requiere ramas para trepar y escondites."
+        "notes": "Requiere ramas para trepar y escondites.",
+        "birth_weight": 50,
+        "months_to_adult": 36
     },
     "Python regius": {
         "feed_interval": 7,
@@ -125,7 +127,9 @@ SPECIES_DB = {
         "shed_interval": 30,
         "diet": "Roedores (ratones pequeños)",
         "enclosure": "Terrario de 90x45x45 cm",
-        "notes": "Necesita alta humedad durante la muda."
+        "notes": "Necesita alta humedad durante la muda.",
+        "birth_weight": 60,
+        "months_to_adult": 24
     },
     "Pantherophis guttatus": {
         "feed_interval": 5,
@@ -135,7 +139,9 @@ SPECIES_DB = {
         "shed_interval": 20,
         "diet": "Roedores (ratones pequeños)",
         "enclosure": "Terrario de 60x40x40 cm",
-        "notes": "Muy activo, necesita espacio para explorar."
+        "notes": "Muy activo, necesita espacio para explorar.",
+        "birth_weight": 10,
+        "months_to_adult": 18
     },
     "Lampropeltis getula": {
         "feed_interval": 7,
@@ -145,7 +151,9 @@ SPECIES_DB = {
         "shed_interval": 25,
         "diet": "Roedores, lagartijas",
         "enclosure": "Terrario de 90x45x45 cm",
-        "notes": "Puede ser caníbal, mantener separados."
+        "notes": "Puede ser caníbal, mantener separados.",
+        "birth_weight": 15,
+        "months_to_adult": 20
     },
     "Morelia spilota": {
         "feed_interval": 10,
@@ -155,7 +163,9 @@ SPECIES_DB = {
         "shed_interval": 40,
         "diet": "Roedores y aves pequeñas",
         "enclosure": "Terrario alto (120x60x120 cm)",
-        "notes": "Arborícola, necesita ramas y altura."
+        "notes": "Arborícola, necesita ramas y altura.",
+        "birth_weight": 40,
+        "months_to_adult": 30
     },
     "Piton Bola": {
         "feed_interval": 7,
@@ -165,7 +175,9 @@ SPECIES_DB = {
         "shed_interval": 30,
         "diet": "Roedores (ratones pequeños)",
         "enclosure": "Terrario de 90x45x45 cm",
-        "notes": "Especie común en cautiverio."
+        "notes": "Especie común en cautiverio.",
+        "birth_weight": 60,
+        "months_to_adult": 24
     },
     "Pogona Viticeps": {
         "feed_interval": 1,
@@ -175,7 +187,9 @@ SPECIES_DB = {
         "shed_interval": 14,
         "diet": "Insectos, verduras, frutas",
         "enclosure": "Terrario de 120x60x60 cm con luz UVB",
-        "notes": "Necesita luz UVB y gradiente térmico."
+        "notes": "Necesita luz UVB y gradiente térmico.",
+        "birth_weight": 5,
+        "months_to_adult": 12
     }
 }
 DEFAULT_SPECIES = {
@@ -186,7 +200,9 @@ DEFAULT_SPECIES = {
     "shed_interval": 30,
     "diet": "Roedores",
     "enclosure": "Terrario estándar",
-    "notes": "Sin información adicional."
+    "notes": "Sin información adicional.",
+    "birth_weight": 20,
+    "months_to_adult": 24
 }
 
 # ---------- FUNCIONES AUXILIARES ----------
@@ -209,6 +225,28 @@ def safe_int(value, default=0):
         return int(value)
     except (ValueError, TypeError):
         return default
+
+def estimate_age(current_weight, species_info):
+    """
+    Estima la edad en meses usando un modelo de crecimiento lineal
+    entre el peso al nacer y el peso adulto.
+    """
+    birth_weight = species_info.get("birth_weight", 20)
+    adult_weight = species_info.get("adult_weight", 1000)
+    months_to_adult = species_info.get("months_to_adult", 24)
+
+    if adult_weight <= birth_weight:
+        return None  # Datos inválidos
+
+    if current_weight <= birth_weight:
+        return 0
+
+    if current_weight >= adult_weight:
+        return months_to_adult  # Adulto
+
+    proportion = (current_weight - birth_weight) / (adult_weight - birth_weight)
+    estimated_months = proportion * months_to_adult
+    return round(estimated_months, 1)
 
 # ---------- AUTENTICACIÓN ----------
 if "authenticated" not in st.session_state:
@@ -242,7 +280,7 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
-    st.caption("🐍 Herpeto-Logistics Pro v2.4")
+    st.caption("🐍 Herpeto-Logistics Pro v2.5")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -263,7 +301,6 @@ def get_events(table_name, unique_id):
 
 @st.cache_data(ttl=60)
 def get_peso_history(unique_id):
-    """Obtiene el historial de pesos de un ejemplar desde la tabla 'peso'."""
     try:
         res = supabase.table("peso").select("*").eq("unique_id", unique_id).order("fecha", asc=True).execute()
         return res.data
@@ -276,7 +313,7 @@ def get_peso_history(unique_id):
 if menu == "📊 Panel de Control":
     st.header("📊 Panel de Control")
     reptiles = get_reptiles(st.session_state.username)
-    
+
     if not reptiles:
         st.info("No hay ejemplares registrados. Ve a 'Nuevo Ejemplar' para agregar uno.")
     else:
@@ -284,16 +321,16 @@ if menu == "📊 Panel de Control":
         selected_key = st.selectbox("🔍 Selecciona un ejemplar", list(opciones.keys()))
         item = opciones[selected_key]
         unique_id = item['unique_id']
-        
+
         species_name = item.get('species', '')
         species_info = get_species_info(species_name)
         feed_interval = species_info.get("feed_interval", 7)
-        
+
         alimentacion = get_events("alimentacion", unique_id)
         muda = get_events("muda", unique_id)
         veterinario = get_events("veterinario", unique_id)
-        peso_hist = get_peso_history(unique_id)  # <-- NUEVO
-        
+        peso_hist = get_peso_history(unique_id)
+
         # ---- Métricas superiores ----
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -315,9 +352,9 @@ if menu == "📊 Panel de Control":
                 st.metric("🔄 Última muda", f"Hace {days} días" if days is not None else "N/A")
             else:
                 st.metric("🔄 Última muda", "Sin registros")
-        
+
         st.divider()
-        
+
         # ---- Recomendaciones IA ----
         st.subheader("🧠 Recomendaciones personalizadas")
         with st.container():
@@ -338,7 +375,7 @@ if menu == "📊 Panel de Control":
                         st.info("ℹ️ No se pudo calcular la próxima alimentación (fecha inválida).")
                 else:
                     st.info(f"ℹ️ Según la especie {species_name}, se recomienda alimentar cada {feed_interval} días. Registra la primera alimentación.")
-                
+
                 # Muda
                 shed_interval = species_info.get("shed_interval", 30)
                 if muda and len(muda) > 0:
@@ -355,16 +392,17 @@ if menu == "📊 Panel de Control":
                         st.info("ℹ️ No se pudo calcular la próxima muda (fecha inválida).")
                 else:
                     st.info(f"ℹ️ La especie {species_name} suele mudar cada {shed_interval} días aproximadamente.")
-                
-                # Condiciones
+
+                # Condiciones ambientales
                 temp_min, temp_max = species_info.get("temp_range", (25, 30))
                 hum = species_info.get("humidity", 50)
                 st.write(f"🌡️ **Condiciones ideales**: {temp_min}°C - {temp_max}°C, humedad ~{hum}%.")
                 st.write(f"🍽️ **Dieta recomendada**: {species_info.get('diet', 'N/A')}")
                 st.write(f"🏠 **Terrario**: {species_info.get('enclosure', 'N/A')}")
                 st.write(f"📝 **Notas**: {species_info.get('notes', '')}")
-            
+
             with col_rec2:
+                # Progreso de peso
                 adult_weight = species_info.get("adult_weight", 1000)
                 current_weight = safe_int(item.get('peso'))
                 if current_weight > 0:
@@ -373,47 +411,48 @@ if menu == "📊 Panel de Control":
                     st.progress(progress, text=f"{progress*100:.1f}% del peso adulto")
                 else:
                     st.info("Registra el peso para ver el progreso.")
-                
-                # Edad estimada
-                all_dates = []
-                for ev in alimentacion + muda + veterinario + peso_hist:
-                    if 'fecha' in ev and ev['fecha']:
-                        all_dates.append(ev['fecha'])
-                if all_dates:
-                    first_date = min(all_dates)
-                    days_old = safe_days_between(first_date)
-                    if days_old is not None:
-                        st.metric("📅 Edad estimada", f"{days_old // 30} meses" if days_old < 365 else f"{days_old // 365} años")
+
+                # Edad estimada basada en peso y especie
+                if current_weight > 0:
+                    estimated_age = estimate_age(current_weight, species_info)
+                    if estimated_age is not None:
+                        if estimated_age >= species_info.get("months_to_adult", 24):
+                            st.metric("📅 Edad estimada", "Adulto")
+                        else:
+                            st.metric("📅 Edad estimada", f"~{estimated_age} meses")
+                        st.caption("⏳ Estimación basada en peso y especie")
+                    else:
+                        st.info("🕒 No se puede estimar la edad (datos insuficientes).")
                 else:
-                    st.info("🕒 Edad no disponible (sin eventos).")
-        
+                    st.info("🕒 Registra el peso para estimar la edad.")
+
         st.divider()
-        
-        # ---- Gráfico de peso (USANDO TABLA 'peso' como principal) ----
+
+        # ---- Gráfico de peso ----
         st.subheader("📈 Evolución de peso")
         if peso_hist and len(peso_hist) > 0:
             try:
                 df_peso = pd.DataFrame(peso_hist)
                 df_peso['fecha'] = pd.to_datetime(df_peso['fecha']).dt.date
                 df_peso = df_peso.sort_values('fecha')
-                fig = px.line(df_peso, x='fecha', y='peso', 
-                             title='Evolución del peso registrado (tabla Peso)',
-                             labels={'peso': 'Peso (g)', 'fecha': 'Fecha'})
+                fig = px.line(df_peso, x='fecha', y='peso',
+                              title='Evolución del peso registrado (tabla Peso)',
+                              labels={'peso': 'Peso (g)', 'fecha': 'Fecha'})
                 fig.update_layout(template='plotly_dark')
                 fig.update_xaxes(tickformat="%Y-%m-%d")
                 st.plotly_chart(fig, use_container_width=True)
             except Exception as e:
                 st.info(f"No se pudo generar el gráfico: {str(e)}")
         elif alimentacion and len(alimentacion) > 0:
-            # Fallback: usar datos de alimentación (si no hay tabla peso)
+            # Fallback: usar datos de alimentación
             try:
                 df_alim = pd.DataFrame(alimentacion)
                 if 'peso_alimento' in df_alim.columns and not df_alim['peso_alimento'].isnull().all():
                     df_alim['fecha'] = pd.to_datetime(df_alim['fecha']).dt.date
                     df_alim = df_alim.sort_values('fecha')
-                    fig = px.line(df_alim, x='fecha', y='peso_alimento', 
-                                 title='Evolución del peso (desde alimentación)',
-                                 labels={'peso_alimento': 'Peso (g)', 'fecha': 'Fecha'})
+                    fig = px.line(df_alim, x='fecha', y='peso_alimento',
+                                  title='Evolución del peso (desde alimentación)',
+                                  labels={'peso_alimento': 'Peso (g)', 'fecha': 'Fecha'})
                     fig.update_layout(template='plotly_dark')
                     fig.update_xaxes(tickformat="%Y-%m-%d")
                     st.plotly_chart(fig, use_container_width=True)
@@ -423,11 +462,11 @@ if menu == "📊 Panel de Control":
                 st.info(f"No se pudo generar el gráfico: {str(e)}")
         else:
             st.info("Registra pesos en 'Registro de Peso' para ver la evolución.")
-        
+
         # ---- Historial (tabs) ----
         st.subheader("📋 Historial completo")
         tabs = st.tabs(["🍽️ Alimentación", "🔄 Muda", "⚖️ Peso", "🏥 Veterinario"])
-        
+
         with tabs[0]:
             if alimentacion:
                 df = pd.DataFrame(alimentacion)
@@ -439,7 +478,7 @@ if menu == "📊 Panel de Control":
                 st.download_button("📥 Descargar CSV", data=csv, file_name=f"alimentacion_{unique_id}.csv", mime="text/csv")
             else:
                 st.info("Sin registros de alimentación.")
-        
+
         with tabs[1]:
             if muda:
                 df = pd.DataFrame(muda)
@@ -451,7 +490,7 @@ if menu == "📊 Panel de Control":
                 st.download_button("📥 Descargar CSV", data=csv, file_name=f"muda_{unique_id}.csv", mime="text/csv")
             else:
                 st.info("Sin registros de muda.")
-        
+
         with tabs[2]:
             if peso_hist:
                 df = pd.DataFrame(peso_hist)
@@ -463,7 +502,7 @@ if menu == "📊 Panel de Control":
                 st.download_button("📥 Descargar CSV", data=csv, file_name=f"peso_{unique_id}.csv", mime="text/csv")
             else:
                 st.info("Sin registros de peso.")
-        
+
         with tabs[3]:
             if veterinario:
                 df = pd.DataFrame(veterinario)
@@ -573,7 +612,7 @@ elif menu == "🔄 Muda":
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
 
-# ---- REGISTRO DE PESO (NUEVO MÓDULO) ----
+# ---- REGISTRO DE PESO ----
 elif menu == "⚖️ Registro de Peso":
     st.header("⚖️ Registrar peso del ejemplar")
     reptiles = get_reptiles(st.session_state.username)
@@ -585,9 +624,9 @@ elif menu == "⚖️ Registro de Peso":
         item = opciones[selected]
         unique_id = item['unique_id']
         current_peso = safe_int(item.get('peso'))
-        
+
         st.info(f"Peso actual registrado: **{current_peso} g**")
-        
+
         with st.form("peso_form"):
             fecha = st.date_input("📅 Fecha", value=datetime.now())
             nuevo_peso = st.number_input("⚖️ Nuevo peso (g)", min_value=0, step=10, value=current_peso)
@@ -598,7 +637,7 @@ elif menu == "⚖️ Registro de Peso":
                     st.error("El peso debe ser mayor a 0.")
                 else:
                     try:
-                        # 1. Insertar en tabla 'peso'
+                        # Insertar en tabla 'peso'
                         data_peso = {
                             "unique_id": unique_id,
                             "owner_name": st.session_state.username,
@@ -607,10 +646,10 @@ elif menu == "⚖️ Registro de Peso":
                             "notas": notas
                         }
                         supabase.table("peso").insert(data_peso).execute()
-                        
-                        # 2. Actualizar campo 'peso' en 'reptiles'
+
+                        # Actualizar campo 'peso' en 'reptiles'
                         supabase.table("reptiles").update({"peso": int(nuevo_peso)}).eq("unique_id", unique_id).execute()
-                        
+
                         st.success(f"✅ Peso actualizado: {nuevo_peso} g")
                         st.cache_data.clear()
                         st.rerun()
@@ -659,7 +698,7 @@ elif menu == "📈 Estadísticas Globales":
     else:
         total = len(reptiles)
         st.metric("📊 Total de ejemplares", total)
-        
+
         df_species = pd.DataFrame(reptiles)
         if 'species' in df_species.columns:
             species_counts = df_species['species'].value_counts().reset_index()
@@ -667,21 +706,21 @@ elif menu == "📈 Estadísticas Globales":
             fig = px.bar(species_counts, x='Especie', y='Cantidad', title='Distribución por especie')
             fig.update_layout(template='plotly_dark')
             st.plotly_chart(fig, use_container_width=True)
-        
+
         if 'sex' in df_species.columns:
             sex_counts = df_species['sex'].value_counts().reset_index()
             sex_counts.columns = ['Sexo', 'Cantidad']
             fig2 = px.pie(sex_counts, names='Sexo', values='Cantidad', title='Proporción por sexo')
             fig2.update_layout(template='plotly_dark')
             st.plotly_chart(fig2, use_container_width=True)
-        
+
         if 'peso' in df_species.columns and 'species' in df_species.columns:
             avg_weight = df_species.groupby('species')['peso'].mean().reset_index()
             avg_weight.columns = ['Especie', 'Peso promedio (g)']
             fig3 = px.bar(avg_weight, x='Especie', y='Peso promedio (g)', title='Peso promedio por especie')
             fig3.update_layout(template='plotly_dark')
             st.plotly_chart(fig3, use_container_width=True)
-        
+
         # Actividad reciente (incluyendo tabla 'peso')
         st.subheader("📅 Actividad reciente")
         all_events = []
@@ -702,9 +741,9 @@ elif menu == "📈 Estadísticas Globales":
                 df_events['fecha'] = pd.to_datetime(df_events['fecha'])
                 df_events['mes'] = df_events['fecha'].dt.to_period('M').astype(str)
                 monthly = df_events.groupby(['mes', 'tipo']).size().reset_index(name='count')
-                fig4 = px.bar(monthly, x='mes', y='count', color='tipo', 
-                             title='Eventos por mes y tipo',
-                             labels={'mes': 'Mes', 'count': 'Número de eventos'})
+                fig4 = px.bar(monthly, x='mes', y='count', color='tipo',
+                              title='Eventos por mes y tipo',
+                              labels={'mes': 'Mes', 'count': 'Número de eventos'})
                 fig4.update_layout(template='plotly_dark')
                 st.plotly_chart(fig4, use_container_width=True)
             else:
