@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
-# ---------- CONFIGURACIÓN ----------
+# ---------- CONFIGURACIÓN DE PÁGINA ----------
 st.set_page_config(
     page_title="🐍 Herpeto-Logistics Pro",
     page_icon="🦎",
@@ -15,11 +15,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- ESTILOS OSCUROS ----------
+# ---------- ESTILOS CSS PARA TEMA OSCURO Y ALTO CONTRASTE ----------
 st.markdown("""
 <style>
-    .stApp { background-color: #0e1117; }
-    .css-1d391kg, .stSidebar { background-color: #1e2229; }
+    /* Fondo general oscuro */
+    .stApp {
+        background-color: #0e1117;
+    }
+    .css-1d391kg, .stSidebar {
+        background-color: #1e2229;
+    }
     .stAlert, .stForm, .stSelectbox, .stTextInput, .stNumberInput, .stDataFrame, .stMarkdown {
         background-color: #262b33;
         border-radius: 10px;
@@ -34,8 +39,12 @@ st.markdown("""
         border-left: 4px solid #4caf50;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
-    div[data-testid="metric-container"] label { color: #b0bec5 !important; }
-    div[data-testid="metric-container"] div { color: #ffffff !important; }
+    div[data-testid="metric-container"] label {
+        color: #b0bec5 !important;
+    }
+    div[data-testid="metric-container"] div {
+        color: #ffffff !important;
+    }
     .stButton > button {
         background-color: #4caf50;
         color: white;
@@ -45,9 +54,16 @@ st.markdown("""
         font-weight: bold;
         transition: 0.3s;
     }
-    .stButton > button:hover { background-color: #388e3c; color: white; }
-    h1, h2, h3, h4, h5, p, li, label { color: #eaeef2 !important; }
-    .stSidebar .stRadio label { color: #b0bec5 !important; }
+    .stButton > button:hover {
+        background-color: #388e3c;
+        color: white;
+    }
+    h1, h2, h3, h4, h5, p, li, label {
+        color: #eaeef2 !important;
+    }
+    .stSidebar .stRadio label {
+        color: #b0bec5 !important;
+    }
     .stSidebar .stRadio div[role="radiogroup"] label {
         background-color: #2a2f39;
         padding: 0.5rem 1rem;
@@ -55,7 +71,9 @@ st.markdown("""
         margin: 2px 0;
         color: #ffffff !important;
     }
-    .stSidebar .stRadio div[role="radiogroup"] label:hover { background-color: #3a4050; }
+    .stSidebar .stRadio div[role="radiogroup"] label:hover {
+        background-color: #3a4050;
+    }
     .stSidebar .stRadio div[role="radiogroup"] label[data-selected="true"] {
         background-color: #4caf50;
         color: white !important;
@@ -69,8 +87,28 @@ st.markdown("""
     .stSelectbox > div > div:hover, .stTextInput > div > div:hover, .stNumberInput > div > div:hover {
         border-color: #4caf50;
     }
-    .stDataFrame { background-color: #1e2229; }
-    .stDataFrame table { color: #eaeef2; }
+    .stDataFrame {
+        background-color: #1e2229;
+    }
+    .stDataFrame table {
+        color: #eaeef2;
+    }
+    .stAlert {
+        background-color: #2a2f39;
+        border-left: 4px solid #4caf50;
+    }
+    .stAlert.error {
+        border-left-color: #f44336;
+    }
+    .stAlert.warning {
+        border-left-color: #ff9800;
+    }
+    .stAlert.info {
+        border-left-color: #2196f3;
+    }
+    .stProgress > div > div > div {
+        background-color: #4caf50;
+    }
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: #1e2229;
@@ -91,7 +129,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- SUPABASE ----------
+# ---------- CONEXIÓN A SUPABASE ----------
 @st.cache_resource
 def init_supabase():
     url = st.secrets['PROJECT_URL'].strip().rstrip('/')
@@ -100,7 +138,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO ----------
+# ---------- BASE DE CONOCIMIENTO DE ESPECIES (ACTUALIZADA) ----------
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -161,6 +199,16 @@ SPECIES_DB = {
         "diet": "Roedores (ratones pequeños)",
         "enclosure": "Terrario de 90x45x45 cm",
         "notes": "Especie común en cautiverio."
+    },
+    "Pogona Viticeps": {  # Dragón barbudo
+        "feed_interval": 1,    # Los juveniles comen diario, adultos cada 2 días. Usamos 1 para alertar.
+        "temp_range": (35, 40),
+        "humidity": 30,
+        "adult_weight": 500,
+        "shed_interval": 14,
+        "diet": "Insectos, verduras, frutas",
+        "enclosure": "Terrario de 120x60x60 cm con luz UVB",
+        "notes": "Necesita luz UVB y gradiente térmico."
     }
 }
 DEFAULT_SPECIES = {
@@ -229,7 +277,7 @@ with st.sidebar:
         st.rerun()
     st.caption("🐍 Herpeto-Logistics Pro v2.3")
 
-# ---------- CONSULTAS ----------
+# ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
 def get_reptiles(owner):
     try:
@@ -263,11 +311,13 @@ if menu == "📊 Panel de Control":
         
         species_name = item.get('species', '')
         species_info = get_species_info(species_name)
+        feed_interval = species_info.get("feed_interval", 7)
         
         alimentacion = get_events("alimentacion", unique_id)
         muda = get_events("muda", unique_id)
         veterinario = get_events("veterinario", unique_id)
         
+        # ---- Métricas superiores ----
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("🐍 Especie", species_name if species_name else "Desconocida")
@@ -291,11 +341,12 @@ if menu == "📊 Panel de Control":
         
         st.divider()
         
+        # ---- Recomendaciones IA ----
         st.subheader("🧠 Recomendaciones personalizadas")
         with st.container():
             col_rec1, col_rec2 = st.columns([2, 1])
             with col_rec1:
-                feed_interval = species_info.get("feed_interval", 7)
+                # Alimentación
                 if alimentacion and len(alimentacion) > 0:
                     last_feed_date_str = alimentacion[0].get('fecha')
                     try:
@@ -303,14 +354,15 @@ if menu == "📊 Panel de Control":
                         next_feed_recommended = last_feed_date + timedelta(days=feed_interval)
                         days_until = (next_feed_recommended - datetime.now()).days
                         if days_until <= 0:
-                            st.error(f"⚠️ **Alerta de alimentación**: ¡Han pasado {abs(days_until)} días desde la fecha recomendada para {species_name}! 🍽️")
+                            st.error(f"⚠️ **Alerta de alimentación**: ¡Han pasado {abs(days_until)} días desde la fecha recomendada para {species_name}! (Intervalo sugerido: cada {feed_interval} días)")
                         else:
-                            st.success(f"✅ Próxima alimentación recomendada en {days_until} días (según especie {species_name})")
+                            st.success(f"✅ Próxima alimentación recomendada en {days_until} días (intervalo sugerido: cada {feed_interval} días para {species_name})")
                     except:
                         st.info("ℹ️ No se pudo calcular la próxima alimentación (fecha inválida).")
                 else:
                     st.info(f"ℹ️ Según la especie {species_name}, se recomienda alimentar cada {feed_interval} días. Registra la primera alimentación.")
                 
+                # Muda
                 shed_interval = species_info.get("shed_interval", 30)
                 if muda and len(muda) > 0:
                     last_shed_date_str = muda[0].get('fecha')
@@ -319,14 +371,15 @@ if menu == "📊 Panel de Control":
                         next_shed_estimated = last_shed_date + timedelta(days=shed_interval)
                         days_until_shed = (next_shed_estimated - datetime.now()).days
                         if days_until_shed <= 0:
-                            st.warning(f"🔄 Posible muda inminente (han pasado {abs(days_until_shed)} días desde el intervalo esperado).")
+                            st.warning(f"🔄 Posible muda inminente (han pasado {abs(days_until_shed)} días desde el intervalo esperado de {shed_interval} días).")
                         else:
-                            st.info(f"🔄 Próxima muda estimada en {days_until_shed} días.")
+                            st.info(f"🔄 Próxima muda estimada en {days_until_shed} días (intervalo sugerido: cada {shed_interval} días).")
                     except:
                         st.info("ℹ️ No se pudo calcular la próxima muda (fecha inválida).")
                 else:
                     st.info(f"ℹ️ La especie {species_name} suele mudar cada {shed_interval} días aproximadamente.")
                 
+                # Condiciones
                 temp_min, temp_max = species_info.get("temp_range", (25, 30))
                 hum = species_info.get("humidity", 50)
                 st.write(f"🌡️ **Condiciones ideales**: {temp_min}°C - {temp_max}°C, humedad ~{hum}%.")
@@ -344,6 +397,7 @@ if menu == "📊 Panel de Control":
                 else:
                     st.info("Registra el peso para ver el progreso.")
                 
+                # Edad estimada
                 all_dates = []
                 for ev in alimentacion + muda + veterinario:
                     if 'fecha' in ev and ev['fecha']:
@@ -358,17 +412,20 @@ if menu == "📊 Panel de Control":
         
         st.divider()
         
+        # ---- Gráfico de peso (con solo fecha) ----
         st.subheader("📈 Evolución de peso")
         if alimentacion and len(alimentacion) > 0:
             try:
                 df_alim = pd.DataFrame(alimentacion)
                 if 'peso_alimento' in df_alim.columns and not df_alim['peso_alimento'].isnull().all():
-                    df_alim['fecha'] = pd.to_datetime(df_alim['fecha'])
+                    df_alim['fecha'] = pd.to_datetime(df_alim['fecha']).dt.date  # <--- SOLO FECHA
                     df_alim = df_alim.sort_values('fecha')
                     fig = px.line(df_alim, x='fecha', y='peso_alimento', 
                                  title='Evolución del peso registrado en alimentaciones',
                                  labels={'peso_alimento': 'Peso (g)', 'fecha': 'Fecha'})
                     fig.update_layout(template='plotly_dark')
+                    # Asegurar formato de fecha en el eje
+                    fig.update_xaxes(tickformat="%Y-%m-%d")
                     st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.info("No hay datos de peso en los registros de alimentación.")
@@ -377,6 +434,7 @@ if menu == "📊 Panel de Control":
         else:
             st.info("Registra alimentaciones para ver la evolución del peso.")
         
+        # ---- Historial (tabs) ----
         st.subheader("📋 Historial completo")
         tabs = st.tabs(["🍽️ Alimentación", "🔄 Muda", "🏥 Veterinario"])
         
@@ -452,7 +510,7 @@ elif menu == "➕ Nuevo Ejemplar":
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
 
-# ---- ALIMENTACIÓN (CORREGIDO: SIN 'notas') ----
+# ---- ALIMENTACIÓN (sin campo 'notas') ----
 elif menu == "🍽️ Alimentación":
     st.header("🍽️ Registrar alimentación")
     reptiles = get_reptiles(st.session_state.username)
@@ -467,7 +525,7 @@ elif menu == "🍽️ Alimentación":
             fecha = st.date_input("📅 Fecha", value=datetime.now())
             tipo_alimento = st.text_input("🍗 Tipo de alimento")
             peso_alimento = st.number_input("⚖️ Peso del alimento (g)", min_value=0, step=5)
-            # NOTA: el campo 'notas' se ha eliminado porque no existe en la tabla
+            notas = st.text_area("📝 Notas adicionales (opcional)")
             submitted = st.form_submit_button("💾 Guardar alimentación")
             if submitted:
                 data = {
@@ -476,7 +534,7 @@ elif menu == "🍽️ Alimentación":
                     "fecha": str(fecha),
                     "tipo_alimento": tipo_alimento,
                     "peso_alimento": int(peso_alimento)
-                    # 'notas' eliminado
+                    # NOTA: Eliminamos 'notas' porque no existe en la tabla
                 }
                 try:
                     supabase.table("alimentacion").insert(data).execute()
@@ -485,7 +543,7 @@ elif menu == "🍽️ Alimentación":
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
 
-# ---- MUDA (CORREGIDO: solo columnas básicas) ----
+# ---- MUDA ----
 elif menu == "🔄 Muda":
     st.header("🔄 Registrar muda")
     reptiles = get_reptiles(st.session_state.username)
@@ -514,7 +572,7 @@ elif menu == "🔄 Muda":
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
 
-# ---- VETERINARIO (CORREGIDO: solo columnas básicas) ----
+# ---- VETERINARIO ----
 elif menu == "🏥 Veterinario":
     st.header("🏥 Registrar visita veterinaria")
     reptiles = get_reptiles(st.session_state.username)
@@ -528,14 +586,17 @@ elif menu == "🏥 Veterinario":
         with st.form("vet_form"):
             fecha = st.date_input("📅 Fecha", value=datetime.now())
             evaluacion = st.text_area("🩺 Evaluación médica")
-            # tratamiento y proxima_cita eliminados si no existen
+            tratamiento = st.text_input("💊 Tratamiento recetado")
+            proxima_cita = st.date_input("📅 Próxima cita (opcional)", value=None)
             submitted = st.form_submit_button("💾 Guardar registro")
             if submitted:
                 data = {
                     "unique_id": unique_id,
                     "owner_name": st.session_state.username,
                     "fecha": str(fecha),
-                    "evaluacion_medica": evaluacion
+                    "evaluacion_medica": evaluacion,
+                    "tratamiento": tratamiento,
+                    "proxima_cita": str(proxima_cita) if proxima_cita else None
                 }
                 try:
                     supabase.table("veterinario").insert(data).execute()
@@ -576,6 +637,7 @@ elif menu == "📈 Estadísticas Globales":
             fig3.update_layout(template='plotly_dark')
             st.plotly_chart(fig3, use_container_width=True)
         
+        # Actividad reciente
         st.subheader("📅 Actividad reciente")
         all_events = []
         for table in ["alimentacion", "muda", "veterinario"]:
