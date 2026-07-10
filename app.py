@@ -105,7 +105,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO DE ESPECIES (CON DATOS DE CRECIMIENTO) ----------
+# ---------- BASE DE CONOCIMIENTO DE ESPECIES ----------
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -117,7 +117,8 @@ SPECIES_DB = {
         "enclosure": "Terrario de 120x60x60 cm",
         "notes": "Requiere ramas para trepar y escondites.",
         "birth_weight": 50,
-        "months_to_adult": 36
+        "months_to_adult": 36,
+        "diet_type": "carnivoro"
     },
     "Python regius": {
         "feed_interval": 7,
@@ -129,7 +130,8 @@ SPECIES_DB = {
         "enclosure": "Terrario de 90x45x45 cm",
         "notes": "Necesita alta humedad durante la muda.",
         "birth_weight": 60,
-        "months_to_adult": 24
+        "months_to_adult": 24,
+        "diet_type": "carnivoro"
     },
     "Pantherophis guttatus": {
         "feed_interval": 5,
@@ -141,7 +143,8 @@ SPECIES_DB = {
         "enclosure": "Terrario de 60x40x40 cm",
         "notes": "Muy activo, necesita espacio para explorar.",
         "birth_weight": 10,
-        "months_to_adult": 18
+        "months_to_adult": 18,
+        "diet_type": "carnivoro"
     },
     "Lampropeltis getula": {
         "feed_interval": 7,
@@ -153,7 +156,8 @@ SPECIES_DB = {
         "enclosure": "Terrario de 90x45x45 cm",
         "notes": "Puede ser caníbal, mantener separados.",
         "birth_weight": 15,
-        "months_to_adult": 20
+        "months_to_adult": 20,
+        "diet_type": "carnivoro"
     },
     "Morelia spilota": {
         "feed_interval": 10,
@@ -165,7 +169,8 @@ SPECIES_DB = {
         "enclosure": "Terrario alto (120x60x120 cm)",
         "notes": "Arborícola, necesita ramas y altura.",
         "birth_weight": 40,
-        "months_to_adult": 30
+        "months_to_adult": 30,
+        "diet_type": "carnivoro"
     },
     "Piton Bola": {
         "feed_interval": 7,
@@ -177,7 +182,8 @@ SPECIES_DB = {
         "enclosure": "Terrario de 90x45x45 cm",
         "notes": "Especie común en cautiverio.",
         "birth_weight": 60,
-        "months_to_adult": 24
+        "months_to_adult": 24,
+        "diet_type": "carnivoro"
     },
     "Pogona Viticeps": {
         "feed_interval": 1,
@@ -189,7 +195,8 @@ SPECIES_DB = {
         "enclosure": "Terrario de 120x60x60 cm con luz UVB",
         "notes": "Necesita luz UVB y gradiente térmico.",
         "birth_weight": 5,
-        "months_to_adult": 12
+        "months_to_adult": 12,
+        "diet_type": "omnivoro"
     }
 }
 DEFAULT_SPECIES = {
@@ -202,7 +209,8 @@ DEFAULT_SPECIES = {
     "enclosure": "Terrario estándar",
     "notes": "Sin información adicional.",
     "birth_weight": 20,
-    "months_to_adult": 24
+    "months_to_adult": 24,
+    "diet_type": "carnivoro"
 }
 
 # ---------- FUNCIONES AUXILIARES ----------
@@ -227,26 +235,34 @@ def safe_int(value, default=0):
         return default
 
 def estimate_age(current_weight, species_info):
-    """
-    Estima la edad en meses usando un modelo de crecimiento lineal
-    entre el peso al nacer y el peso adulto.
-    """
     birth_weight = species_info.get("birth_weight", 20)
     adult_weight = species_info.get("adult_weight", 1000)
     months_to_adult = species_info.get("months_to_adult", 24)
-
     if adult_weight <= birth_weight:
-        return None  # Datos inválidos
-
+        return None
     if current_weight <= birth_weight:
         return 0
-
     if current_weight >= adult_weight:
-        return months_to_adult  # Adulto
-
+        return months_to_adult
     proportion = (current_weight - birth_weight) / (adult_weight - birth_weight)
-    estimated_months = proportion * months_to_adult
-    return round(estimated_months, 1)
+    return round(proportion * months_to_adult, 1)
+
+# ---------- CLASIFICACIÓN DE ALIMENTOS ----------
+FOOD_CATEGORIES = {
+    'insecto': ['grillo', 'tenebrio', 'gusano', 'cucaracha', 'langosta', 'saltamontes', 'mosca', 'larva'],
+    'verdura': ['lechuga', 'zanahoria', 'calabacín', 'pepino', 'pimiento', 'brócoli', 'col', 'espinaca', 'acelga', 'berza', 'diente de león'],
+    'fruta': ['manzana', 'plátano', 'fresa', 'mango', 'papaya', 'pera', 'melón', 'sandía', 'kiwi', 'uva', 'arándano']
+}
+
+def classify_food(food_text):
+    if not food_text:
+        return 'desconocido'
+    food_lower = food_text.lower()
+    for categoria, keywords in FOOD_CATEGORIES.items():
+        for kw in keywords:
+            if kw in food_lower:
+                return categoria
+    return 'otro'
 
 # ---------- AUTENTICACIÓN ----------
 if "authenticated" not in st.session_state:
@@ -280,7 +296,7 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
-    st.caption("🐍 Herpeto-Logistics Pro v2.5")
+    st.caption("🐍 Herpeto-Logistics Pro v2.6")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -412,7 +428,7 @@ if menu == "📊 Panel de Control":
                 else:
                     st.info("Registra el peso para ver el progreso.")
 
-                # Edad estimada basada en peso y especie
+                # Edad estimada
                 if current_weight > 0:
                     estimated_age = estimate_age(current_weight, species_info)
                     if estimated_age is not None:
@@ -427,6 +443,39 @@ if menu == "📊 Panel de Control":
                     st.info("🕒 Registra el peso para estimar la edad.")
 
         st.divider()
+
+        # ---- GRÁFICO DE DIETA (solo para omnívoros) ----
+        if species_info.get("diet_type") == "omnivoro":
+            st.subheader("🥗 Variabilidad de la dieta")
+            if alimentacion and len(alimentacion) > 0:
+                # Clasificar alimentos
+                df_alim = pd.DataFrame(alimentacion)
+                df_alim['categoria'] = df_alim['tipo_alimento'].apply(classify_food)
+                # Contar por categoría
+                counts = df_alim['categoria'].value_counts().reset_index()
+                counts.columns = ['Categoría', 'Conteo']
+                # Gráfico de barras
+                fig = px.bar(counts, x='Categoría', y='Conteo', color='Categoría',
+                             title='Distribución de tipos de alimento consumidos',
+                             labels={'Conteo': 'Número de registros'})
+                fig.update_layout(template='plotly_dark', showlegend=False)
+                st.plotly_chart(fig, use_container_width=True)
+
+                # Mostrar últimos alimentos y su clasificación
+                with st.expander("📋 Detalle de alimentos clasificados"):
+                    st.dataframe(df_alim[['fecha', 'tipo_alimento', 'categoria']].head(10), use_container_width=True)
+
+                # Alerta si falta algún grupo importante
+                if 'insecto' not in counts['Categoría'].values:
+                    st.warning("⚠️ No se han registrado insectos en la dieta. Los dragones barbudos necesitan proteína animal.")
+                if 'verdura' not in counts['Categoría'].values:
+                    st.warning("⚠️ No se han registrado verduras. La dieta debe incluir vegetales de hoja verde.")
+                if 'fruta' not in counts['Categoría'].values:
+                    st.info("🍎 Aunque no esencial, la fruta puede ofrecerse como premio ocasional.")
+            else:
+                st.info("Registra alimentaciones para ver la variedad de la dieta.")
+
+            st.divider()
 
         # ---- Gráfico de peso ----
         st.subheader("📈 Evolución de peso")
@@ -473,6 +522,9 @@ if menu == "📊 Panel de Control":
                 df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
                 if 'fecha' in df:
                     df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
+                # Añadir columna de categoría para visualización
+                if 'tipo_alimento' in df:
+                    df['categoría'] = df['tipo_alimento'].apply(classify_food)
                 st.dataframe(df, use_container_width=True, height=300)
                 csv = df.to_csv(index=False).encode('utf-8')
                 st.download_button("📥 Descargar CSV", data=csv, file_name=f"alimentacion_{unique_id}.csv", mime="text/csv")
@@ -564,7 +616,7 @@ elif menu == "🍽️ Alimentación":
         unique_id = item['unique_id']
         with st.form("feed_form"):
             fecha = st.date_input("📅 Fecha", value=datetime.now())
-            tipo_alimento = st.text_input("🍗 Tipo de alimento")
+            tipo_alimento = st.text_input("🍗 Tipo de alimento", help="Ej: grillo, lechuga, manzana, etc.")
             peso_alimento = st.number_input("⚖️ Peso del alimento (g)", min_value=0, step=5)
             notas = st.text_area("📝 Notas adicionales (opcional)")
             submitted = st.form_submit_button("💾 Guardar alimentación")
@@ -637,7 +689,6 @@ elif menu == "⚖️ Registro de Peso":
                     st.error("El peso debe ser mayor a 0.")
                 else:
                     try:
-                        # Insertar en tabla 'peso'
                         data_peso = {
                             "unique_id": unique_id,
                             "owner_name": st.session_state.username,
@@ -646,10 +697,7 @@ elif menu == "⚖️ Registro de Peso":
                             "notas": notas
                         }
                         supabase.table("peso").insert(data_peso).execute()
-
-                        # Actualizar campo 'peso' en 'reptiles'
                         supabase.table("reptiles").update({"peso": int(nuevo_peso)}).eq("unique_id", unique_id).execute()
-
                         st.success(f"✅ Peso actualizado: {nuevo_peso} g")
                         st.cache_data.clear()
                         st.rerun()
@@ -721,7 +769,6 @@ elif menu == "📈 Estadísticas Globales":
             fig3.update_layout(template='plotly_dark')
             st.plotly_chart(fig3, use_container_width=True)
 
-        # Actividad reciente (incluyendo tabla 'peso')
         st.subheader("📅 Actividad reciente")
         all_events = []
         for table in ["alimentacion", "muda", "veterinario", "peso"]:
