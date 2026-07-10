@@ -213,6 +213,46 @@ DEFAULT_SPECIES = {
     "diet_type": "carnivoro"
 }
 
+# ---------- CLASIFICACIÓN DE ALIMENTOS (MEJORADA) ----------
+FOOD_CATEGORIES = {
+    'insecto': [
+        'grillo', 'tenebrio', 'gusano', 'cucaracha', 'langosta', 'saltamontes',
+        'mosca', 'larva', 'zophoba', 'superworm', 'mealworm', 'cricket', 'roach',
+        'hormiga', 'termita', 'escarabajo', 'polilla', 'gusano de seda', 'silk worm',
+        'chapulín', 'jabón'
+    ],
+    'verdura': [
+        'lechuga', 'zanahoria', 'calabacín', 'pepino', 'pimiento', 'brócoli', 'col',
+        'espinaca', 'acelga', 'berza', 'diente de león', 'nopal', 'tuna', 'cardo',
+        'calabaza', 'berenjena', 'judía verde', 'guisante', 'maíz', 'rábano', 'remolacha',
+        'apio', 'esparrago', 'alcachofa', 'coliflor', 'repollo', 'col rizada', 'kale',
+        'hoja de mostaza', 'hoja de nabo', 'perejil', 'cilantro', 'albahaca', 'orégano'
+    ],
+    'fruta': [
+        'manzana', 'plátano', 'fresa', 'mango', 'papaya', 'pera', 'melón', 'sandía',
+        'kiwi', 'uva', 'arándano', 'frambuesa', 'mora', 'cereza', 'durazno', 'ciruela',
+        'higo', 'granada', 'pomelo', 'naranja', 'mandarina', 'limón', 'piña', 'coco',
+        'maracuyá', 'guanábana', 'carambola', 'litchi', 'rambután'
+    ]
+}
+
+def classify_food(food_text):
+    """Clasifica el tipo de alimento en: insecto, verdura, fruta, otro o desconocido."""
+    if not food_text:
+        return 'desconocido'
+    food_lower = food_text.lower().strip()
+    for categoria, keywords in FOOD_CATEGORIES.items():
+        for kw in keywords:
+            if kw in food_lower:
+                return categoria
+    if 'verdura' in food_lower or 'vegetal' in food_lower or 'hoja' in food_lower:
+        return 'verdura'
+    if 'fruta' in food_lower:
+        return 'fruta'
+    if 'insecto' in food_lower or 'bicho' in food_lower or 'proteína animal' in food_lower:
+        return 'insecto'
+    return 'otro'
+
 # ---------- FUNCIONES AUXILIARES ----------
 def get_species_info(species_name):
     return SPECIES_DB.get(species_name, DEFAULT_SPECIES)
@@ -247,10 +287,6 @@ def estimate_age(current_weight, species_info):
     proportion = (current_weight - birth_weight) / (adult_weight - birth_weight)
     return round(proportion * months_to_adult, 1)
 
-'insecto': [
-    ...,
-    'camarón', 'langostino', 'krill'
-],
 # ---------- AUTENTICACIÓN ----------
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -283,7 +319,7 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
-    st.caption("🐍 Herpeto-Logistics Pro v2.6")
+    st.caption("🐍 Herpeto-Logistics Pro v2.7")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -358,8 +394,11 @@ if menu == "📊 Panel de Control":
 
         st.divider()
 
-        # ---- Recomendaciones IA ----
+        # ---- Recomendaciones IA (sistema basado en reglas) ----
         st.subheader("🧠 Recomendaciones personalizadas")
+        # ========== AQUÍ PODRÍAS INTEGRAR LA API DE GROK ==========
+        # Ejemplo: respuesta_grok = llamar_a_grok(species_name, peso, alimentacion, muda)
+        # y mostrarla en un área expandible o como reemplazo de las siguientes recomendaciones.
         with st.container():
             col_rec1, col_rec2 = st.columns([2, 1])
             with col_rec1:
@@ -435,24 +474,19 @@ if menu == "📊 Panel de Control":
         if species_info.get("diet_type") == "omnivoro":
             st.subheader("🥗 Variabilidad de la dieta")
             if alimentacion and len(alimentacion) > 0:
-                # Clasificar alimentos
                 df_alim = pd.DataFrame(alimentacion)
                 df_alim['categoria'] = df_alim['tipo_alimento'].apply(classify_food)
-                # Contar por categoría
                 counts = df_alim['categoria'].value_counts().reset_index()
                 counts.columns = ['Categoría', 'Conteo']
-                # Gráfico de barras
                 fig = px.bar(counts, x='Categoría', y='Conteo', color='Categoría',
                              title='Distribución de tipos de alimento consumidos',
                              labels={'Conteo': 'Número de registros'})
                 fig.update_layout(template='plotly_dark', showlegend=False)
                 st.plotly_chart(fig, use_container_width=True)
 
-                # Mostrar últimos alimentos y su clasificación
                 with st.expander("📋 Detalle de alimentos clasificados"):
                     st.dataframe(df_alim[['fecha', 'tipo_alimento', 'categoria']].head(10), use_container_width=True)
 
-                # Alerta si falta algún grupo importante
                 if 'insecto' not in counts['Categoría'].values:
                     st.warning("⚠️ No se han registrado insectos en la dieta. Los dragones barbudos necesitan proteína animal.")
                 if 'verdura' not in counts['Categoría'].values:
@@ -461,7 +495,6 @@ if menu == "📊 Panel de Control":
                     st.info("🍎 Aunque no esencial, la fruta puede ofrecerse como premio ocasional.")
             else:
                 st.info("Registra alimentaciones para ver la variedad de la dieta.")
-
             st.divider()
 
         # ---- Gráfico de peso ----
@@ -480,7 +513,6 @@ if menu == "📊 Panel de Control":
             except Exception as e:
                 st.info(f"No se pudo generar el gráfico: {str(e)}")
         elif alimentacion and len(alimentacion) > 0:
-            # Fallback: usar datos de alimentación
             try:
                 df_alim = pd.DataFrame(alimentacion)
                 if 'peso_alimento' in df_alim.columns and not df_alim['peso_alimento'].isnull().all():
@@ -509,7 +541,6 @@ if menu == "📊 Panel de Control":
                 df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
                 if 'fecha' in df:
                     df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
-                # Añadir columna de categoría para visualización
                 if 'tipo_alimento' in df:
                     df['categoría'] = df['tipo_alimento'].apply(classify_food)
                 st.dataframe(df, use_container_width=True, height=300)
@@ -603,7 +634,7 @@ elif menu == "🍽️ Alimentación":
         unique_id = item['unique_id']
         with st.form("feed_form"):
             fecha = st.date_input("📅 Fecha", value=datetime.now())
-            tipo_alimento = st.text_input("🍗 Tipo de alimento", help="Ej: grillo, lechuga, manzana, etc.")
+            tipo_alimento = st.text_input("🍗 Tipo de alimento", help="Ej: grillo, lechuga, manzana, nopal, etc.")
             peso_alimento = st.number_input("⚖️ Peso del alimento (g)", min_value=0, step=5)
             notas = st.text_area("📝 Notas adicionales (opcional)")
             submitted = st.form_submit_button("💾 Guardar alimentación")
