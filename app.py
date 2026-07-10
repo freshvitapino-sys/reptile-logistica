@@ -18,13 +18,8 @@ st.set_page_config(
 # ---------- ESTILOS CSS PARA TEMA OSCURO Y ALTO CONTRASTE ----------
 st.markdown("""
 <style>
-    /* Fondo general oscuro */
-    .stApp {
-        background-color: #0e1117;
-    }
-    .css-1d391kg, .stSidebar {
-        background-color: #1e2229;
-    }
+    .stApp { background-color: #0e1117; }
+    .css-1d391kg, .stSidebar { background-color: #1e2229; }
     .stAlert, .stForm, .stSelectbox, .stTextInput, .stNumberInput, .stDataFrame, .stMarkdown {
         background-color: #262b33;
         border-radius: 10px;
@@ -39,12 +34,8 @@ st.markdown("""
         border-left: 4px solid #4caf50;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
-    div[data-testid="metric-container"] label {
-        color: #b0bec5 !important;
-    }
-    div[data-testid="metric-container"] div {
-        color: #ffffff !important;
-    }
+    div[data-testid="metric-container"] label { color: #b0bec5 !important; }
+    div[data-testid="metric-container"] div { color: #ffffff !important; }
     .stButton > button {
         background-color: #4caf50;
         color: white;
@@ -54,16 +45,9 @@ st.markdown("""
         font-weight: bold;
         transition: 0.3s;
     }
-    .stButton > button:hover {
-        background-color: #388e3c;
-        color: white;
-    }
-    h1, h2, h3, h4, h5, p, li, label {
-        color: #eaeef2 !important;
-    }
-    .stSidebar .stRadio label {
-        color: #b0bec5 !important;
-    }
+    .stButton > button:hover { background-color: #388e3c; color: white; }
+    h1, h2, h3, h4, h5, p, li, label { color: #eaeef2 !important; }
+    .stSidebar .stRadio label { color: #b0bec5 !important; }
     .stSidebar .stRadio div[role="radiogroup"] label {
         background-color: #2a2f39;
         padding: 0.5rem 1rem;
@@ -71,9 +55,7 @@ st.markdown("""
         margin: 2px 0;
         color: #ffffff !important;
     }
-    .stSidebar .stRadio div[role="radiogroup"] label:hover {
-        background-color: #3a4050;
-    }
+    .stSidebar .stRadio div[role="radiogroup"] label:hover { background-color: #3a4050; }
     .stSidebar .stRadio div[role="radiogroup"] label[data-selected="true"] {
         background-color: #4caf50;
         color: white !important;
@@ -87,28 +69,13 @@ st.markdown("""
     .stSelectbox > div > div:hover, .stTextInput > div > div:hover, .stNumberInput > div > div:hover {
         border-color: #4caf50;
     }
-    .stDataFrame {
-        background-color: #1e2229;
-    }
-    .stDataFrame table {
-        color: #eaeef2;
-    }
-    .stAlert {
-        background-color: #2a2f39;
-        border-left: 4px solid #4caf50;
-    }
-    .stAlert.error {
-        border-left-color: #f44336;
-    }
-    .stAlert.warning {
-        border-left-color: #ff9800;
-    }
-    .stAlert.info {
-        border-left-color: #2196f3;
-    }
-    .stProgress > div > div > div {
-        background-color: #4caf50;
-    }
+    .stDataFrame { background-color: #1e2229; }
+    .stDataFrame table { color: #eaeef2; }
+    .stAlert { background-color: #2a2f39; border-left: 4px solid #4caf50; }
+    .stAlert.error { border-left-color: #f44336; }
+    .stAlert.warning { border-left-color: #ff9800; }
+    .stAlert.info { border-left-color: #2196f3; }
+    .stProgress > div > div > div { background-color: #4caf50; }
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: #1e2229;
@@ -138,7 +105,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO DE ESPECIES (ACTUALIZADA) ----------
+# ---------- BASE DE CONOCIMIENTO DE ESPECIES ----------
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -200,8 +167,8 @@ SPECIES_DB = {
         "enclosure": "Terrario de 90x45x45 cm",
         "notes": "Especie común en cautiverio."
     },
-    "Pogona Viticeps": {  # Dragón barbudo
-        "feed_interval": 1,    # Los juveniles comen diario, adultos cada 2 días. Usamos 1 para alertar.
+    "Pogona Viticeps": {
+        "feed_interval": 1,
         "temp_range": (35, 40),
         "humidity": 30,
         "adult_weight": 500,
@@ -268,14 +235,14 @@ with st.sidebar:
     st.divider()
     menu = st.radio(
         "📌 Módulos",
-        ["📊 Panel de Control", "➕ Nuevo Ejemplar", "🍽️ Alimentación", "🔄 Muda", "🏥 Veterinario", "📈 Estadísticas Globales"],
+        ["📊 Panel de Control", "➕ Nuevo Ejemplar", "🍽️ Alimentación", "🔄 Muda", "⚖️ Registro de Peso", "🏥 Veterinario", "📈 Estadísticas Globales"],
         index=0
     )
     st.divider()
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
-    st.caption("🐍 Herpeto-Logistics Pro v2.3")
+    st.caption("🐍 Herpeto-Logistics Pro v2.4")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -290,6 +257,15 @@ def get_reptiles(owner):
 def get_events(table_name, unique_id):
     try:
         res = supabase.table(table_name).select("*").eq("unique_id", unique_id).order("fecha", desc=True).execute()
+        return res.data
+    except:
+        return []
+
+@st.cache_data(ttl=60)
+def get_peso_history(unique_id):
+    """Obtiene el historial de pesos de un ejemplar desde la tabla 'peso'."""
+    try:
+        res = supabase.table("peso").select("*").eq("unique_id", unique_id).order("fecha", asc=True).execute()
         return res.data
     except:
         return []
@@ -316,6 +292,7 @@ if menu == "📊 Panel de Control":
         alimentacion = get_events("alimentacion", unique_id)
         muda = get_events("muda", unique_id)
         veterinario = get_events("veterinario", unique_id)
+        peso_hist = get_peso_history(unique_id)  # <-- NUEVO
         
         # ---- Métricas superiores ----
         col1, col2, col3, col4 = st.columns(4)
@@ -399,7 +376,7 @@ if menu == "📊 Panel de Control":
                 
                 # Edad estimada
                 all_dates = []
-                for ev in alimentacion + muda + veterinario:
+                for ev in alimentacion + muda + veterinario + peso_hist:
                     if 'fecha' in ev and ev['fecha']:
                         all_dates.append(ev['fecha'])
                 if all_dates:
@@ -412,31 +389,44 @@ if menu == "📊 Panel de Control":
         
         st.divider()
         
-        # ---- Gráfico de peso (con solo fecha) ----
+        # ---- Gráfico de peso (USANDO TABLA 'peso' como principal) ----
         st.subheader("📈 Evolución de peso")
-        if alimentacion and len(alimentacion) > 0:
+        if peso_hist and len(peso_hist) > 0:
+            try:
+                df_peso = pd.DataFrame(peso_hist)
+                df_peso['fecha'] = pd.to_datetime(df_peso['fecha']).dt.date
+                df_peso = df_peso.sort_values('fecha')
+                fig = px.line(df_peso, x='fecha', y='peso', 
+                             title='Evolución del peso registrado (tabla Peso)',
+                             labels={'peso': 'Peso (g)', 'fecha': 'Fecha'})
+                fig.update_layout(template='plotly_dark')
+                fig.update_xaxes(tickformat="%Y-%m-%d")
+                st.plotly_chart(fig, use_container_width=True)
+            except Exception as e:
+                st.info(f"No se pudo generar el gráfico: {str(e)}")
+        elif alimentacion and len(alimentacion) > 0:
+            # Fallback: usar datos de alimentación (si no hay tabla peso)
             try:
                 df_alim = pd.DataFrame(alimentacion)
                 if 'peso_alimento' in df_alim.columns and not df_alim['peso_alimento'].isnull().all():
-                    df_alim['fecha'] = pd.to_datetime(df_alim['fecha']).dt.date  # <--- SOLO FECHA
+                    df_alim['fecha'] = pd.to_datetime(df_alim['fecha']).dt.date
                     df_alim = df_alim.sort_values('fecha')
                     fig = px.line(df_alim, x='fecha', y='peso_alimento', 
-                                 title='Evolución del peso registrado en alimentaciones',
+                                 title='Evolución del peso (desde alimentación)',
                                  labels={'peso_alimento': 'Peso (g)', 'fecha': 'Fecha'})
                     fig.update_layout(template='plotly_dark')
-                    # Asegurar formato de fecha en el eje
                     fig.update_xaxes(tickformat="%Y-%m-%d")
                     st.plotly_chart(fig, use_container_width=True)
                 else:
-                    st.info("No hay datos de peso en los registros de alimentación.")
+                    st.info("No hay datos de peso en alimentación.")
             except Exception as e:
                 st.info(f"No se pudo generar el gráfico: {str(e)}")
         else:
-            st.info("Registra alimentaciones para ver la evolución del peso.")
+            st.info("Registra pesos en 'Registro de Peso' para ver la evolución.")
         
         # ---- Historial (tabs) ----
         st.subheader("📋 Historial completo")
-        tabs = st.tabs(["🍽️ Alimentación", "🔄 Muda", "🏥 Veterinario"])
+        tabs = st.tabs(["🍽️ Alimentación", "🔄 Muda", "⚖️ Peso", "🏥 Veterinario"])
         
         with tabs[0]:
             if alimentacion:
@@ -463,6 +453,18 @@ if menu == "📊 Panel de Control":
                 st.info("Sin registros de muda.")
         
         with tabs[2]:
+            if peso_hist:
+                df = pd.DataFrame(peso_hist)
+                df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
+                if 'fecha' in df:
+                    df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
+                st.dataframe(df, use_container_width=True, height=300)
+                csv = df.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Descargar CSV", data=csv, file_name=f"peso_{unique_id}.csv", mime="text/csv")
+            else:
+                st.info("Sin registros de peso.")
+        
+        with tabs[3]:
             if veterinario:
                 df = pd.DataFrame(veterinario)
                 df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
@@ -510,7 +512,7 @@ elif menu == "➕ Nuevo Ejemplar":
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
 
-# ---- ALIMENTACIÓN (sin campo 'notas') ----
+# ---- ALIMENTACIÓN ----
 elif menu == "🍽️ Alimentación":
     st.header("🍽️ Registrar alimentación")
     reptiles = get_reptiles(st.session_state.username)
@@ -534,7 +536,6 @@ elif menu == "🍽️ Alimentación":
                     "fecha": str(fecha),
                     "tipo_alimento": tipo_alimento,
                     "peso_alimento": int(peso_alimento)
-                    # NOTA: Eliminamos 'notas' porque no existe en la tabla
                 }
                 try:
                     supabase.table("alimentacion").insert(data).execute()
@@ -571,6 +572,50 @@ elif menu == "🔄 Muda":
                     st.cache_data.clear()
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
+
+# ---- REGISTRO DE PESO (NUEVO MÓDULO) ----
+elif menu == "⚖️ Registro de Peso":
+    st.header("⚖️ Registrar peso del ejemplar")
+    reptiles = get_reptiles(st.session_state.username)
+    if not reptiles:
+        st.warning("Primero registra un ejemplar.")
+    else:
+        opciones = {f"{r['unique_id']} - {r.get('name', 'Sin nombre')}": r for r in reptiles}
+        selected = st.selectbox("Selecciona el ejemplar", list(opciones.keys()))
+        item = opciones[selected]
+        unique_id = item['unique_id']
+        current_peso = safe_int(item.get('peso'))
+        
+        st.info(f"Peso actual registrado: **{current_peso} g**")
+        
+        with st.form("peso_form"):
+            fecha = st.date_input("📅 Fecha", value=datetime.now())
+            nuevo_peso = st.number_input("⚖️ Nuevo peso (g)", min_value=0, step=10, value=current_peso)
+            notas = st.text_area("📝 Notas (opcional)")
+            submitted = st.form_submit_button("💾 Guardar peso")
+            if submitted:
+                if nuevo_peso <= 0:
+                    st.error("El peso debe ser mayor a 0.")
+                else:
+                    try:
+                        # 1. Insertar en tabla 'peso'
+                        data_peso = {
+                            "unique_id": unique_id,
+                            "owner_name": st.session_state.username,
+                            "fecha": str(fecha),
+                            "peso": int(nuevo_peso),
+                            "notas": notas
+                        }
+                        supabase.table("peso").insert(data_peso).execute()
+                        
+                        # 2. Actualizar campo 'peso' en 'reptiles'
+                        supabase.table("reptiles").update({"peso": int(nuevo_peso)}).eq("unique_id", unique_id).execute()
+                        
+                        st.success(f"✅ Peso actualizado: {nuevo_peso} g")
+                        st.cache_data.clear()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Error al guardar peso: {e}")
 
 # ---- VETERINARIO ----
 elif menu == "🏥 Veterinario":
@@ -637,13 +682,13 @@ elif menu == "📈 Estadísticas Globales":
             fig3.update_layout(template='plotly_dark')
             st.plotly_chart(fig3, use_container_width=True)
         
-        # Actividad reciente
+        # Actividad reciente (incluyendo tabla 'peso')
         st.subheader("📅 Actividad reciente")
         all_events = []
-        for table in ["alimentacion", "muda", "veterinario"]:
+        for table in ["alimentacion", "muda", "veterinario", "peso"]:
             for r in reptiles:
                 uid = r['unique_id']
-                data = get_events(table, uid)
+                data = get_events(table, uid) if table != "peso" else get_peso_history(uid)
                 for ev in data:
                     all_events.append({
                         'fecha': ev.get('fecha'),
