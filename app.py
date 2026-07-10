@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
-# ---------- CONFIGURACIÓN DE PÁGINA ----------
+# ---------- CONFIGURACIÓN ----------
 st.set_page_config(
     page_title="🐍 Herpeto-Logistics Pro",
     page_icon="🦎",
@@ -15,18 +15,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- ESTILOS CSS PARA TEMA OSCURO Y ALTO CONTRASTE ----------
+# ---------- ESTILOS OSCUROS ----------
 st.markdown("""
 <style>
-    /* Fondo general oscuro */
-    .stApp {
-        background-color: #0e1117;
-    }
-    /* Fondo de la barra lateral */
-    .css-1d391kg, .stSidebar {
-        background-color: #1e2229;
-    }
-    /* Tarjetas y contenedores */
+    .stApp { background-color: #0e1117; }
+    .css-1d391kg, .stSidebar { background-color: #1e2229; }
     .stAlert, .stForm, .stSelectbox, .stTextInput, .stNumberInput, .stDataFrame, .stMarkdown {
         background-color: #262b33;
         border-radius: 10px;
@@ -34,7 +27,6 @@ st.markdown("""
         margin-bottom: 1rem;
         color: #eaeef2;
     }
-    /* Métricas */
     div[data-testid="metric-container"] {
         background-color: #1e2229;
         border-radius: 8px;
@@ -42,13 +34,8 @@ st.markdown("""
         border-left: 4px solid #4caf50;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
-    div[data-testid="metric-container"] label {
-        color: #b0bec5 !important;
-    }
-    div[data-testid="metric-container"] div {
-        color: #ffffff !important;
-    }
-    /* Botones */
+    div[data-testid="metric-container"] label { color: #b0bec5 !important; }
+    div[data-testid="metric-container"] div { color: #ffffff !important; }
     .stButton > button {
         background-color: #4caf50;
         color: white;
@@ -58,17 +45,9 @@ st.markdown("""
         font-weight: bold;
         transition: 0.3s;
     }
-    .stButton > button:hover {
-        background-color: #388e3c;
-        color: white;
-    }
-    /* Títulos y textos */
-    h1, h2, h3, h4, h5, p, li, label {
-        color: #eaeef2 !important;
-    }
-    .stSidebar .stRadio label {
-        color: #b0bec5 !important;
-    }
+    .stButton > button:hover { background-color: #388e3c; color: white; }
+    h1, h2, h3, h4, h5, p, li, label { color: #eaeef2 !important; }
+    .stSidebar .stRadio label { color: #b0bec5 !important; }
     .stSidebar .stRadio div[role="radiogroup"] label {
         background-color: #2a2f39;
         padding: 0.5rem 1rem;
@@ -76,14 +55,11 @@ st.markdown("""
         margin: 2px 0;
         color: #ffffff !important;
     }
-    .stSidebar .stRadio div[role="radiogroup"] label:hover {
-        background-color: #3a4050;
-    }
+    .stSidebar .stRadio div[role="radiogroup"] label:hover { background-color: #3a4050; }
     .stSidebar .stRadio div[role="radiogroup"] label[data-selected="true"] {
         background-color: #4caf50;
         color: white !important;
     }
-    /* Selectbox y otros inputs */
     .stSelectbox > div > div, .stTextInput > div > div, .stNumberInput > div > div {
         background-color: #2a2f39;
         color: #eaeef2;
@@ -93,32 +69,8 @@ st.markdown("""
     .stSelectbox > div > div:hover, .stTextInput > div > div:hover, .stNumberInput > div > div:hover {
         border-color: #4caf50;
     }
-    /* Dataframe */
-    .stDataFrame {
-        background-color: #1e2229;
-    }
-    .stDataFrame table {
-        color: #eaeef2;
-    }
-    /* Mensajes de éxito/error/info */
-    .stAlert {
-        background-color: #2a2f39;
-        border-left: 4px solid #4caf50;
-    }
-    .stAlert.error {
-        border-left-color: #f44336;
-    }
-    .stAlert.warning {
-        border-left-color: #ff9800;
-    }
-    .stAlert.info {
-        border-left-color: #2196f3;
-    }
-    /* Barra de progreso */
-    .stProgress > div > div > div {
-        background-color: #4caf50;
-    }
-    /* Tabs */
+    .stDataFrame { background-color: #1e2229; }
+    .stDataFrame table { color: #eaeef2; }
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: #1e2229;
@@ -139,7 +91,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- CONEXIÓN A SUPABASE ----------
+# ---------- SUPABASE ----------
 @st.cache_resource
 def init_supabase():
     url = st.secrets['PROJECT_URL'].strip().rstrip('/')
@@ -148,7 +100,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO DE ESPECIES ----------
+# ---------- BASE DE CONOCIMIENTO ----------
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -222,7 +174,7 @@ DEFAULT_SPECIES = {
     "notes": "Sin información adicional."
 }
 
-# ---------- FUNCIONES AUXILIARES CON MANEJO DE NULOS ----------
+# ---------- FUNCIONES AUXILIARES ----------
 def get_species_info(species_name):
     return SPECIES_DB.get(species_name, DEFAULT_SPECIES)
 
@@ -236,7 +188,6 @@ def safe_days_between(date_str):
     return None
 
 def safe_int(value, default=0):
-    """Convierte a entero, devuelve default si es None o no convertible."""
     try:
         if value is None:
             return default
@@ -276,9 +227,9 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
-    st.caption("🐍 Herpeto-Logistics Pro v2.2")
+    st.caption("🐍 Herpeto-Logistics Pro v2.3")
 
-# ---------- FUNCIONES DE CONSULTA ----------
+# ---------- CONSULTAS ----------
 @st.cache_data(ttl=60)
 def get_reptiles(owner):
     try:
@@ -317,7 +268,6 @@ if menu == "📊 Panel de Control":
         muda = get_events("muda", unique_id)
         veterinario = get_events("veterinario", unique_id)
         
-        # ---- Métricas superiores (con valores seguros) ----
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("🐍 Especie", species_name if species_name else "Desconocida")
@@ -341,12 +291,10 @@ if menu == "📊 Panel de Control":
         
         st.divider()
         
-        # ---- Recomendaciones IA (con valores seguros) ----
         st.subheader("🧠 Recomendaciones personalizadas")
         with st.container():
             col_rec1, col_rec2 = st.columns([2, 1])
             with col_rec1:
-                # Alimentación
                 feed_interval = species_info.get("feed_interval", 7)
                 if alimentacion and len(alimentacion) > 0:
                     last_feed_date_str = alimentacion[0].get('fecha')
@@ -363,7 +311,6 @@ if menu == "📊 Panel de Control":
                 else:
                     st.info(f"ℹ️ Según la especie {species_name}, se recomienda alimentar cada {feed_interval} días. Registra la primera alimentación.")
                 
-                # Muda
                 shed_interval = species_info.get("shed_interval", 30)
                 if muda and len(muda) > 0:
                     last_shed_date_str = muda[0].get('fecha')
@@ -380,7 +327,6 @@ if menu == "📊 Panel de Control":
                 else:
                     st.info(f"ℹ️ La especie {species_name} suele mudar cada {shed_interval} días aproximadamente.")
                 
-                # Condiciones
                 temp_min, temp_max = species_info.get("temp_range", (25, 30))
                 hum = species_info.get("humidity", 50)
                 st.write(f"🌡️ **Condiciones ideales**: {temp_min}°C - {temp_max}°C, humedad ~{hum}%.")
@@ -390,7 +336,7 @@ if menu == "📊 Panel de Control":
             
             with col_rec2:
                 adult_weight = species_info.get("adult_weight", 1000)
-                current_weight = safe_int(item.get('peso'))  # <--- CORREGIDO
+                current_weight = safe_int(item.get('peso'))
                 if current_weight > 0:
                     progress = min(current_weight / adult_weight, 1.0)
                     st.metric("📈 Progreso de peso", f"{current_weight}g / {adult_weight}g")
@@ -398,7 +344,6 @@ if menu == "📊 Panel de Control":
                 else:
                     st.info("Registra el peso para ver el progreso.")
                 
-                # Edad estimada
                 all_dates = []
                 for ev in alimentacion + muda + veterinario:
                     if 'fecha' in ev and ev['fecha']:
@@ -413,7 +358,6 @@ if menu == "📊 Panel de Control":
         
         st.divider()
         
-        # ---- Gráfico de peso ----
         st.subheader("📈 Evolución de peso")
         if alimentacion and len(alimentacion) > 0:
             try:
@@ -433,7 +377,6 @@ if menu == "📊 Panel de Control":
         else:
             st.info("Registra alimentaciones para ver la evolución del peso.")
         
-        # ---- Historial (tabs) ----
         st.subheader("📋 Historial completo")
         tabs = st.tabs(["🍽️ Alimentación", "🔄 Muda", "🏥 Veterinario"])
         
@@ -509,7 +452,7 @@ elif menu == "➕ Nuevo Ejemplar":
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
 
-# ---- ALIMENTACIÓN ----
+# ---- ALIMENTACIÓN (CORREGIDO: SIN 'notas') ----
 elif menu == "🍽️ Alimentación":
     st.header("🍽️ Registrar alimentación")
     reptiles = get_reptiles(st.session_state.username)
@@ -524,7 +467,7 @@ elif menu == "🍽️ Alimentación":
             fecha = st.date_input("📅 Fecha", value=datetime.now())
             tipo_alimento = st.text_input("🍗 Tipo de alimento")
             peso_alimento = st.number_input("⚖️ Peso del alimento (g)", min_value=0, step=5)
-            notas = st.text_area("📝 Notas adicionales")
+            # NOTA: el campo 'notas' se ha eliminado porque no existe en la tabla
             submitted = st.form_submit_button("💾 Guardar alimentación")
             if submitted:
                 data = {
@@ -532,8 +475,8 @@ elif menu == "🍽️ Alimentación":
                     "owner_name": st.session_state.username,
                     "fecha": str(fecha),
                     "tipo_alimento": tipo_alimento,
-                    "peso_alimento": int(peso_alimento),
-                    "notas": notas
+                    "peso_alimento": int(peso_alimento)
+                    # 'notas' eliminado
                 }
                 try:
                     supabase.table("alimentacion").insert(data).execute()
@@ -542,7 +485,7 @@ elif menu == "🍽️ Alimentación":
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
 
-# ---- MUDA ----
+# ---- MUDA (CORREGIDO: solo columnas básicas) ----
 elif menu == "🔄 Muda":
     st.header("🔄 Registrar muda")
     reptiles = get_reptiles(st.session_state.username)
@@ -571,7 +514,7 @@ elif menu == "🔄 Muda":
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
 
-# ---- VETERINARIO ----
+# ---- VETERINARIO (CORREGIDO: solo columnas básicas) ----
 elif menu == "🏥 Veterinario":
     st.header("🏥 Registrar visita veterinaria")
     reptiles = get_reptiles(st.session_state.username)
@@ -585,17 +528,14 @@ elif menu == "🏥 Veterinario":
         with st.form("vet_form"):
             fecha = st.date_input("📅 Fecha", value=datetime.now())
             evaluacion = st.text_area("🩺 Evaluación médica")
-            tratamiento = st.text_input("💊 Tratamiento recetado")
-            proxima_cita = st.date_input("📅 Próxima cita (opcional)", value=None)
+            # tratamiento y proxima_cita eliminados si no existen
             submitted = st.form_submit_button("💾 Guardar registro")
             if submitted:
                 data = {
                     "unique_id": unique_id,
                     "owner_name": st.session_state.username,
                     "fecha": str(fecha),
-                    "evaluacion_medica": evaluacion,
-                    "tratamiento": tratamiento,
-                    "proxima_cita": str(proxima_cita) if proxima_cita else None
+                    "evaluacion_medica": evaluacion
                 }
                 try:
                     supabase.table("veterinario").insert(data).execute()
@@ -636,7 +576,6 @@ elif menu == "📈 Estadísticas Globales":
             fig3.update_layout(template='plotly_dark')
             st.plotly_chart(fig3, use_container_width=True)
         
-        # Actividad reciente
         st.subheader("📅 Actividad reciente")
         all_events = []
         for table in ["alimentacion", "muda", "veterinario"]:
