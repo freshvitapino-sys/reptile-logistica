@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 # ---------- CONFIGURACIÓN DE PÁGINA ----------
 st.set_page_config(
-    page_title="🐍 Herpeto-Logistics Pro",
+    page_title="🐍 RIARE Exotic´s Pro",
     page_icon="🦎",
     layout="wide",
     initial_sidebar_state="expanded"
