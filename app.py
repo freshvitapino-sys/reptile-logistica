@@ -15,7 +15,212 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- PWA Y ESTILOS GLOBALES ----------
+# ---------- ESTILOS CSS (TEMA OSCURO + LOGIN CENTRADO) ----------
+st.markdown("""
+<style>
+    /* Fondo y estructura general */
+    .stApp {
+        background-color: #0e1117;
+    }
+    .css-1d391kg, .stSidebar {
+        background-color: #1e2229;
+    }
+    .stAlert, .stForm, .stSelectbox, .stTextInput, .stNumberInput, .stDataFrame, .stMarkdown {
+        background-color: #262b33;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        color: #eaeef2;
+    }
+    
+    /* Métricas */
+    div[data-testid="metric-container"] {
+        background-color: #1e2229;
+        border-radius: 8px;
+        padding: 1rem;
+        border-left: 4px solid #4caf50;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    div[data-testid="metric-container"] label {
+        color: #b0bec5 !important;
+    }
+    div[data-testid="metric-container"] div {
+        color: #ffffff !important;
+    }
+    
+    /* Botones */
+    .stButton > button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .stButton > button:hover {
+        background-color: #388e3c;
+        color: white;
+    }
+    
+    /* Títulos y textos */
+    h1, h2, h3, h4, h5, p, li, label {
+        color: #eaeef2 !important;
+    }
+    
+    /* Sidebar */
+    .stSidebar .stRadio label {
+        color: #b0bec5 !important;
+    }
+    .stSidebar .stRadio div[role="radiogroup"] label {
+        background-color: #2a2f39;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        margin: 2px 0;
+        color: #ffffff !important;
+    }
+    .stSidebar .stRadio div[role="radiogroup"] label:hover {
+        background-color: #3a4050;
+    }
+    .stSidebar .stRadio div[role="radiogroup"] label[data-selected="true"] {
+        background-color: #4caf50;
+        color: white !important;
+    }
+    
+    /* Inputs y selects */
+    .stSelectbox > div > div, .stTextInput > div > div, .stNumberInput > div > div {
+        background-color: #2a2f39;
+        color: #eaeef2;
+        border-radius: 6px;
+        border: 1px solid #3a4050;
+    }
+    .stSelectbox > div > div:hover, .stTextInput > div > div:hover, .stNumberInput > div > div:hover {
+        border-color: #4caf50;
+    }
+    
+    /* Dataframes */
+    .stDataFrame {
+        background-color: #1e2229;
+    }
+    .stDataFrame table {
+        color: #eaeef2;
+    }
+    
+    /* Alertas */
+    .stAlert {
+        background-color: #2a2f39;
+        border-left: 4px solid #4caf50;
+    }
+    .stAlert.error {
+        border-left-color: #f44336;
+    }
+    .stAlert.warning {
+        border-left-color: #ff9800;
+    }
+    .stAlert.info {
+        border-left-color: #2196f3;
+    }
+    
+    /* Barras de progreso */
+    .stProgress > div > div > div {
+        background-color: #4caf50;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #1e2229;
+        padding: 0.5rem;
+        border-radius: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #2a2f39;
+        color: #b0bec5;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+    }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background-color: #4caf50;
+        color: white;
+    }
+    
+    /* ---- ESTILOS PARA EL LOGIN CENTRADO ---- */
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 70vh;
+    }
+    .login-box {
+        background-color: #1e2229;
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        max-width: 400px;
+        width: 100%;
+        border: 1px solid #2a2f39;
+    }
+    .login-box h1 {
+        color: #4caf50;
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    .login-box p {
+        color: #b0bec5;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    .login-box .stTextInput > div > div {
+        background-color: #2a2f39 !important;
+        border: 1px solid #3a4050 !important;
+    }
+    .login-box .stButton > button {
+        width: 100%;
+        background-color: #4caf50;
+        color: white;
+        font-weight: bold;
+        border: none;
+        padding: 0.6rem;
+        border-radius: 8px;
+        transition: 0.3s;
+    }
+    .login-box .stButton > button:hover {
+        background-color: #388e3c;
+    }
+    
+    /* ---- TÍTULO PRINCIPAL DE LA APP ---- */
+    .main-title {
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #4caf50;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+    }
+    .main-subtitle {
+        text-align: center;
+        color: #b0bec5;
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #1e2229;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #4caf50;
+        border-radius: 3px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ---------- PWA: MANIFEST Y SERVICE WORKER ----------
 st.markdown("""
 <link rel="manifest" href="manifest.json">
 <script>
@@ -25,74 +230,6 @@ st.markdown("""
       .catch((err) => console.log('Error al registrar SW:', err));
   }
 </script>
-<style>
-  /* Ajustes generales */
-  body { margin: 0; padding: 0; }
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: #1e2229; }
-  ::-webkit-scrollbar-thumb { background: #4caf50; border-radius: 3px; }
-
-  /* Títulos principales */
-  .main-title {
-    text-align: center;
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: #4caf50;
-    margin-bottom: 0.5rem;
-    text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
-  }
-  .main-subtitle {
-    text-align: center;
-    color: #b0bec5;
-    font-size: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  /* Login centrado */
-  .login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 70vh;
-  }
-  .login-box {
-    background-color: #1e2229;
-    padding: 2.5rem;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    max-width: 400px;
-    width: 100%;
-    border: 1px solid #2a2f39;
-  }
-  .login-box h1 {
-    color: #4caf50;
-    text-align: center;
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-  }
-  .login-box p {
-    color: #b0bec5;
-    text-align: center;
-    margin-bottom: 1.5rem;
-  }
-  .login-box .stTextInput > div > div {
-    background-color: #2a2f39 !important;
-    border: 1px solid #3a4050 !important;
-  }
-  .login-box .stButton > button {
-    width: 100%;
-    background-color: #4caf50;
-    color: white;
-    font-weight: bold;
-    border: none;
-    padding: 0.6rem;
-    border-radius: 8px;
-    transition: 0.3s;
-  }
-  .login-box .stButton > button:hover {
-    background-color: #388e3c;
-  }
-</style>
 """, unsafe_allow_html=True)
 
 # ---------- CONEXIÓN A SUPABASE ----------
@@ -290,17 +427,20 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    # Contenedor centrado con estilo
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("""
+    # Contenedor centrado con HTML/CSS
+    st.markdown("""
+    <div class="login-container">
         <div class="login-box">
             <h1>🦎 RIARE Exotic's</h1>
             <p>Gestión profesional de reptiles</p>
-        """, unsafe_allow_html=True)
-        
-        username = st.text_input("👤 Nombre de Propietario", key="login_user", placeholder="Tu nombre")
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # El input y el botón deben estar fuera del HTML para que funcionen
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        username = st.text_input("👤 Nombre de Propietario", key="login_user", placeholder="Tu nombre", label_visibility="collapsed")
         if st.button("🚪 Ingresar", use_container_width=True):
             if username.strip():
                 st.session_state.authenticated = True
@@ -308,12 +448,9 @@ if not st.session_state.authenticated:
                 st.rerun()
             else:
                 st.error("Por favor, introduce un nombre.")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# ---------- TÍTULO PRINCIPAL ----------
+# ---------- TÍTULO PRINCIPAL (visible en todas las páginas) ----------
 st.markdown('<div class="main-title">🦎 RIARE Exotic\'s</div>', unsafe_allow_html=True)
 st.markdown('<div class="main-subtitle">Sistema de gestión herpetológica</div>', unsafe_allow_html=True)
 
@@ -406,7 +543,7 @@ if menu == "📊 Panel de Control":
 
         st.divider()
 
-        # ---- Información del ejemplar ----
+        # ---- Información del ejemplar (incluye fase) ----
         st.subheader("📋 Información del ejemplar")
         col_info1, col_info2 = st.columns(2)
         with col_info1:
@@ -420,7 +557,7 @@ if menu == "📊 Panel de Control":
 
         st.divider()
 
-        # ---- Recomendaciones IA ----
+        # ---- Recomendaciones IA (sistema basado en reglas) ----
         st.subheader("🧠 Recomendaciones personalizadas")
         with st.container():
             col_rec1, col_rec2 = st.columns([2, 1])
@@ -608,7 +745,7 @@ if menu == "📊 Panel de Control":
             else:
                 st.info("Sin registros veterinarios.")
 
-# ---- NUEVO EJEMPLAR ----
+# ---- NUEVO EJEMPLAR (con campo "fase") ----
 elif menu == "➕ Nuevo Ejemplar":
     st.header("➕ Registrar nuevo ejemplar")
     with st.form("new_reptile", clear_on_submit=True):
@@ -813,6 +950,7 @@ elif menu == "📈 Estadísticas Globales":
             fig3.update_layout(template='plotly_dark')
             st.plotly_chart(fig3, use_container_width=True)
 
+        # Distribución por fase
         if 'fase' in df_species.columns:
             fase_counts = df_species['fase'].value_counts().reset_index()
             fase_counts.columns = ['Fase', 'Cantidad']
