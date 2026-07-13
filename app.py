@@ -15,69 +15,113 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- ESTILOS CSS (TEMA OSCURO + LOGIN CENTRADO) ----------
+# ---------- ESTILOS CSS (TEMA OSCURO + MOVIL) ----------
 st.markdown("""
 <style>
-    /* Fondo y estructura general */
+    /* Ajustes generales para móvil */
     .stApp {
         background-color: #0e1117;
+        padding: 0.5rem;
     }
     .css-1d391kg, .stSidebar {
         background-color: #1e2229;
     }
+    /* Tarjetas más grandes para móvil */
     .stAlert, .stForm, .stSelectbox, .stTextInput, .stNumberInput, .stDataFrame, .stMarkdown {
         background-color: #262b33;
-        border-radius: 10px;
-        padding: 1rem;
+        border-radius: 12px;
+        padding: 1.2rem;
         margin-bottom: 1rem;
         color: #eaeef2;
+        font-size: 1rem;
     }
-    
-    /* Métricas */
+    /* Métricas con borde más visible */
     div[data-testid="metric-container"] {
         background-color: #1e2229;
-        border-radius: 8px;
+        border-radius: 12px;
         padding: 1rem;
-        border-left: 4px solid #4caf50;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        border-left: 5px solid #4caf50;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        margin-bottom: 0.5rem;
     }
     div[data-testid="metric-container"] label {
         color: #b0bec5 !important;
+        font-size: 0.9rem !important;
     }
     div[data-testid="metric-container"] div {
         color: #ffffff !important;
+        font-size: 1.4rem !important;
     }
-    
-    /* Botones */
+    /* Botones más grandes para táctil */
     .stButton > button {
         background-color: #4caf50;
         color: white;
         border: none;
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        padding: 0.8rem 1.2rem;
         font-weight: bold;
+        font-size: 1.1rem;
         transition: 0.3s;
+        width: 100%;
+        min-height: 50px;
     }
     .stButton > button:hover {
         background-color: #388e3c;
         color: white;
     }
-    
-    /* Títulos y textos */
+    /* Botones de selección de ejemplar (personalizados) */
+    .ejemplar-btn {
+        background-color: #2a2f39;
+        color: #eaeef2;
+        border: 2px solid #3a4050;
+        border-radius: 12px;
+        padding: 0.8rem;
+        margin: 0.3rem 0;
+        font-weight: bold;
+        text-align: center;
+        transition: 0.3s;
+        cursor: pointer;
+        font-size: 0.95rem;
+    }
+    .ejemplar-btn:hover {
+        background-color: #3a4050;
+        border-color: #4caf50;
+    }
+    .ejemplar-btn-seleccionado {
+        background-color: #4caf50;
+        color: white;
+        border-color: #4caf50;
+    }
+    /* Títulos */
     h1, h2, h3, h4, h5, p, li, label {
         color: #eaeef2 !important;
     }
-    
+    .main-title {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #4caf50;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+    }
+    .main-subtitle {
+        text-align: center;
+        color: #b0bec5;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
     /* Sidebar */
     .stSidebar .stRadio label {
         color: #b0bec5 !important;
+        font-size: 1rem;
     }
     .stSidebar .stRadio div[role="radiogroup"] label {
         background-color: #2a2f39;
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
-        margin: 2px 0;
+        padding: 0.7rem 1rem;
+        border-radius: 10px;
+        margin: 4px 0;
         color: #ffffff !important;
+        font-size: 1rem;
     }
     .stSidebar .stRadio div[role="radiogroup"] label:hover {
         background-color: #3a4050;
@@ -86,66 +130,38 @@ st.markdown("""
         background-color: #4caf50;
         color: white !important;
     }
-    
-    /* Inputs y selects */
+    /* Inputs */
     .stSelectbox > div > div, .stTextInput > div > div, .stNumberInput > div > div {
         background-color: #2a2f39;
         color: #eaeef2;
-        border-radius: 6px;
+        border-radius: 10px;
         border: 1px solid #3a4050;
+        font-size: 1rem;
+        padding: 0.5rem;
     }
-    .stSelectbox > div > div:hover, .stTextInput > div > div:hover, .stNumberInput > div > div:hover {
-        border-color: #4caf50;
-    }
-    
-    /* Dataframes */
-    .stDataFrame {
-        background-color: #1e2229;
-    }
-    .stDataFrame table {
-        color: #eaeef2;
-    }
-    
-    /* Alertas */
-    .stAlert {
-        background-color: #2a2f39;
-        border-left: 4px solid #4caf50;
-    }
-    .stAlert.error {
-        border-left-color: #f44336;
-    }
-    .stAlert.warning {
-        border-left-color: #ff9800;
-    }
-    .stAlert.info {
-        border-left-color: #2196f3;
-    }
-    
-    /* Barras de progreso */
-    .stProgress > div > div > div {
-        background-color: #4caf50;
-    }
-    
     /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 6px;
         background-color: #1e2229;
         padding: 0.5rem;
-        border-radius: 8px;
+        border-radius: 12px;
+        flex-wrap: wrap;
     }
     .stTabs [data-baseweb="tab"] {
         background-color: #2a2f39;
         color: #b0bec5;
-        border-radius: 6px;
-        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        padding: 0.6rem 1rem;
         font-weight: bold;
+        font-size: 0.9rem;
+        flex: 1 1 auto;
+        text-align: center;
     }
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
         background-color: #4caf50;
         color: white;
     }
-    
-    /* ---- ESTILOS PARA EL LOGIN CENTRADO ---- */
+    /* Login centrado */
     .login-container {
         display: flex;
         justify-content: center;
@@ -154,8 +170,8 @@ st.markdown("""
     }
     .login-box {
         background-color: #1e2229;
-        padding: 2.5rem;
-        border-radius: 16px;
+        padding: 2rem;
+        border-radius: 20px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.4);
         max-width: 400px;
         width: 100%;
@@ -164,7 +180,7 @@ st.markdown("""
     .login-box h1 {
         color: #4caf50;
         text-align: center;
-        font-size: 2rem;
+        font-size: 1.8rem;
         margin-bottom: 0.5rem;
     }
     .login-box p {
@@ -175,6 +191,8 @@ st.markdown("""
     .login-box .stTextInput > div > div {
         background-color: #2a2f39 !important;
         border: 1px solid #3a4050 !important;
+        font-size: 1rem;
+        padding: 0.6rem;
     }
     .login-box .stButton > button {
         width: 100%;
@@ -182,30 +200,14 @@ st.markdown("""
         color: white;
         font-weight: bold;
         border: none;
-        padding: 0.6rem;
-        border-radius: 8px;
+        padding: 0.8rem;
+        border-radius: 12px;
+        font-size: 1.1rem;
         transition: 0.3s;
     }
     .login-box .stButton > button:hover {
         background-color: #388e3c;
     }
-    
-    /* ---- TÍTULO PRINCIPAL DE LA APP ---- */
-    .main-title {
-        text-align: center;
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #4caf50;
-        margin-bottom: 0.5rem;
-        text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
-    }
-    .main-subtitle {
-        text-align: center;
-        color: #b0bec5;
-        font-size: 1rem;
-        margin-bottom: 2rem;
-    }
-
     /* Scrollbar */
     ::-webkit-scrollbar {
         width: 6px;
@@ -217,35 +219,18 @@ st.markdown("""
         background: #4caf50;
         border-radius: 3px;
     }
-    
-    /* Estilos para los botones de selección de ejemplares */
-    .reptile-button {
-        background-color: #2a2f39;
-        color: #eaeef2;
-        border: 1px solid #3a4050;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        text-align: center;
-        font-weight: bold;
-        cursor: pointer;
-        transition: 0.3s;
-        width: 100%;
-        margin-bottom: 0.5rem;
-    }
-    .reptile-button:hover {
-        background-color: #3a4050;
-        border-color: #4caf50;
-    }
-    .reptile-button-active {
-        background-color: #4caf50;
-        color: white;
-        border: 1px solid #4caf50;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        text-align: center;
-        font-weight: bold;
-        width: 100%;
-        margin-bottom: 0.5rem;
+    /* Ajustes para móvil: columnas en bloque */
+    @media (max-width: 768px) {
+        .stColumns {
+            flex-direction: column !important;
+        }
+        .stColumns > div {
+            width: 100% !important;
+            margin-bottom: 1rem;
+        }
+        .main-title {
+            font-size: 1.6rem;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -271,7 +256,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO DE ESPECIES ----------
+# ---------- BASE DE CONOCIMIENTO ----------
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -460,9 +445,10 @@ def estimate_age(current_weight, species_info):
     proportion = (current_weight - birth_weight) / (adult_weight - birth_weight)
     return round(proportion * months_to_adult, 1)
 
-# ---------- AUTENTICACIÓN CON LOGIN CENTRADO ----------
+# ---------- AUTENTICACIÓN ----------
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
+    st.session_state.selected_reptile = None  # Para almacenar el ID seleccionado
 
 if not st.session_state.authenticated:
     st.markdown("""
@@ -486,7 +472,7 @@ if not st.session_state.authenticated:
                 st.error("Por favor, introduce un nombre.")
     st.stop()
 
-# ---------- TÍTULO PRINCIPAL (visible en todas las páginas) ----------
+# ---------- TÍTULO ----------
 st.markdown('<div class="main-title">🦎 RIARE Exotic\'s</div>', unsafe_allow_html=True)
 st.markdown('<div class="main-subtitle">Sistema de gestión herpetológica</div>', unsafe_allow_html=True)
 
@@ -503,6 +489,7 @@ with st.sidebar:
     st.divider()
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.authenticated = False
+        st.session_state.selected_reptile = None
         st.rerun()
     st.caption("🐍 RIARE Exotic's v3.0")
 
@@ -531,9 +518,39 @@ def get_peso_history(unique_id):
     except:
         return []
 
+# ---------- FUNCIÓN PARA MOSTRAR BOTONES DE EJEMPLAR ----------
+def mostrar_botones_ejemplares(reptiles):
+    """Muestra botones en lugar de selectbox para seleccionar ejemplar."""
+    if not reptiles:
+        st.info("No hay ejemplares registrados.")
+        return None
+    
+    # Dividir en columnas de 2 para móvil
+    cols = st.columns(2)
+    selected_id = None
+    
+    for idx, r in enumerate(reptiles):
+        col = cols[idx % 2]
+        label = f"{r.get('name', 'Sin nombre')}\n({r.get('species', 'N/A')})"
+        # Estilo: si está seleccionado, resaltar
+        is_selected = (st.session_state.get('selected_reptile') == r['unique_id'])
+        btn_style = "ejemplar-btn-seleccionado" if is_selected else "ejemplar-btn"
+        
+        # Botón
+        if col.button(label, key=f"btn_{r['unique_id']}", use_container_width=True):
+            st.session_state.selected_reptile = r['unique_id']
+            st.rerun()
+    
+    # Si hay uno seleccionado, devolverlo
+    if st.session_state.selected_reptile:
+        for r in reptiles:
+            if r['unique_id'] == st.session_state.selected_reptile:
+                return r
+    return None
+
 # ---------- PÁGINAS ----------
 
-# ---- PANEL DE CONTROL (con botones) ----
+# ---- PANEL DE CONTROL ----
 if menu == "📊 Panel de Control":
     st.header("📊 Panel de Control")
     reptiles = get_reptiles(st.session_state.username)
@@ -541,286 +558,247 @@ if menu == "📊 Panel de Control":
     if not reptiles:
         st.info("No hay ejemplares registrados. Ve a 'Nuevo Ejemplar' para agregar uno.")
     else:
-        # ---- INICIO: SELECCIÓN DE EJEMPLAR CON BOTONES ----
-        st.subheader("🔍 Selecciona un ejemplar")
+        # Mostrar botones para seleccionar ejemplar
+        st.subheader("🦎 Selecciona un ejemplar")
+        item = mostrar_botones_ejemplares(reptiles)
         
-        # Inicializar estado de selección si no existe
-        if "selected_reptile_id" not in st.session_state:
-            st.session_state.selected_reptile_id = reptiles[0]['unique_id']
-        
-        # Crear botones en filas de 3
-        cols = st.columns(3)
-        for idx, r in enumerate(reptiles):
-            col = cols[idx % 3]
-            # Determinar si este botón está activo
-            is_active = (st.session_state.selected_reptile_id == r['unique_id'])
-            # Crear un label para el botón
-            label = f"{r.get('name', 'Sin nombre')} 🐍" if r.get('name') else f"{r['unique_id']}"
-            
-            # Estilo condicional
-            if is_active:
-                # Botón activo (verde)
-                button_clicked = col.button(
-                    label, 
-                    key=f"btn_{r['unique_id']}", 
-                    use_container_width=True,
-                    type="primary"  # Esto lo pone verde en Streamlit
-                )
-            else:
-                # Botón inactivo (gris)
-                button_clicked = col.button(
-                    label, 
-                    key=f"btn_{r['unique_id']}", 
-                    use_container_width=True
-                )
-            
-            # Si se hizo clic, actualizar selección
-            if button_clicked:
-                st.session_state.selected_reptile_id = r['unique_id']
-                st.rerun()
-        
-        # Obtener el ejemplar seleccionado
-        selected_reptile = next((r for r in reptiles if r['unique_id'] == st.session_state.selected_reptile_id), reptiles[0])
-        item = selected_reptile
-        unique_id = item['unique_id']
-        # ---- FIN: SELECCIÓN DE EJEMPLAR CON BOTONES ----
-        
-        species_name = item.get('species', '')
-        species_info = get_species_info(species_name)
-        feed_interval = species_info.get("feed_interval", 7)
+        if not item:
+            st.warning("Selecciona un ejemplar de los botones arriba.")
+        else:
+            unique_id = item['unique_id']
+            species_name = item.get('species', '')
+            species_info = get_species_info(species_name)
+            feed_interval = species_info.get("feed_interval", 7)
 
-        alimentacion = get_events("alimentacion", unique_id)
-        muda = get_events("muda", unique_id)
-        veterinario = get_events("veterinario", unique_id)
-        peso_hist = get_peso_history(unique_id)
+            alimentacion = get_events("alimentacion", unique_id)
+            muda = get_events("muda", unique_id)
+            veterinario = get_events("veterinario", unique_id)
+            peso_hist = get_peso_history(unique_id)
 
-        # ---- Métricas superiores ----
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("🐍 Especie", species_name if species_name else "Desconocida")
-        with col2:
-            peso = safe_int(item.get('peso'))
-            st.metric("⚖️ Peso actual", f"{peso} g")
-        with col3:
-            if alimentacion and len(alimentacion) > 0:
-                last_feed = alimentacion[0].get('fecha')
-                days = safe_days_between(last_feed)
-                st.metric("🍽️ Última alimentación", f"Hace {days} días" if days is not None else "N/A")
-            else:
-                st.metric("🍽️ Última alimentación", "Sin registros")
-        with col4:
-            if muda and len(muda) > 0:
-                last_shed = muda[0].get('fecha')
-                days = safe_days_between(last_shed)
-                st.metric("🔄 Última muda", f"Hace {days} días" if days is not None else "N/A")
-            else:
-                st.metric("🔄 Última muda", "Sin registros")
-
-        st.divider()
-
-        # ---- Información del ejemplar (incluye fase) ----
-        st.subheader("📋 Información del ejemplar")
-        col_info1, col_info2 = st.columns(2)
-        with col_info1:
-            st.write(f"**📛 Nombre:** {item.get('name', 'Sin nombre')}")
-            st.write(f"**🔬 Especie:** {item.get('species', 'N/A')}")
-            st.write(f"**🧬 Fase/Gen:** {item.get('fase', 'N/A')}")
-        with col_info2:
-            st.write(f"**⚥ Sexo:** {item.get('sex', 'N/A')}")
-            st.write(f"**📄 Pedimento:** {item.get('pedimento', 'N/A')}")
-            st.write(f"**📝 Notas:** {item.get('notas', 'N/A')}")
-
-        st.divider()
-
-        # ---- Recomendaciones IA (sistema basado en reglas) ----
-        st.subheader("🧠 Recomendaciones personalizadas")
-        with st.container():
-            col_rec1, col_rec2 = st.columns([2, 1])
-            with col_rec1:
-                # Alimentación
+            # ---- Métricas superiores ----
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("🐍 Especie", species_name if species_name else "Desconocida")
+            with col2:
+                peso = safe_int(item.get('peso'))
+                st.metric("⚖️ Peso actual", f"{peso} g")
+            with col3:
                 if alimentacion and len(alimentacion) > 0:
-                    last_feed_date_str = alimentacion[0].get('fecha')
-                    try:
-                        last_feed_date = datetime.strptime(last_feed_date_str[:10], "%Y-%m-%d")
-                        next_feed_recommended = last_feed_date + timedelta(days=feed_interval)
-                        days_until = (next_feed_recommended - datetime.now()).days
-                        if days_until <= 0:
-                            st.error(f"⚠️ **Alerta de alimentación**: ¡Han pasado {abs(days_until)} días desde la fecha recomendada para {species_name}! (Intervalo sugerido: cada {feed_interval} días)")
-                        else:
-                            st.success(f"✅ Próxima alimentación recomendada en {days_until} días (intervalo sugerido: cada {feed_interval} días para {species_name})")
-                    except:
-                        st.info("ℹ️ No se pudo calcular la próxima alimentación (fecha inválida).")
+                    last_feed = alimentacion[0].get('fecha')
+                    days = safe_days_between(last_feed)
+                    st.metric("🍽️ Última alimentación", f"Hace {days} días" if days is not None else "N/A")
                 else:
-                    st.info(f"ℹ️ Según la especie {species_name}, se recomienda alimentar cada {feed_interval} días. Registra la primera alimentación.")
-
-                # Muda
-                shed_interval = species_info.get("shed_interval", 30)
+                    st.metric("🍽️ Última alimentación", "Sin registros")
+            with col4:
                 if muda and len(muda) > 0:
-                    last_shed_date_str = muda[0].get('fecha')
-                    try:
-                        last_shed_date = datetime.strptime(last_shed_date_str[:10], "%Y-%m-%d")
-                        next_shed_estimated = last_shed_date + timedelta(days=shed_interval)
-                        days_until_shed = (next_shed_estimated - datetime.now()).days
-                        if days_until_shed <= 0:
-                            st.warning(f"🔄 Posible muda inminente (han pasado {abs(days_until_shed)} días desde el intervalo esperado de {shed_interval} días).")
-                        else:
-                            st.info(f"🔄 Próxima muda estimada en {days_until_shed} días (intervalo sugerido: cada {shed_interval} días).")
-                    except:
-                        st.info("ℹ️ No se pudo calcular la próxima muda (fecha inválida).")
+                    last_shed = muda[0].get('fecha')
+                    days = safe_days_between(last_shed)
+                    st.metric("🔄 Última muda", f"Hace {days} días" if days is not None else "N/A")
                 else:
-                    st.info(f"ℹ️ La especie {species_name} suele mudar cada {shed_interval} días aproximadamente.")
+                    st.metric("🔄 Última muda", "Sin registros")
 
-                # Condiciones ambientales
-                temp_min, temp_max = species_info.get("temp_range", (25, 30))
-                hum = species_info.get("humidity", 50)
-                st.write(f"🌡️ **Condiciones ideales**: {temp_min}°C - {temp_max}°C, humedad ~{hum}%.")
-                st.write(f"🍽️ **Dieta recomendada**: {species_info.get('diet', 'N/A')}")
-                st.write(f"🏠 **Terrario**: {species_info.get('enclosure', 'N/A')}")
-                st.write(f"📝 **Notas**: {species_info.get('notes', '')}")
-
-            with col_rec2:
-                # Progreso de peso
-                adult_weight = species_info.get("adult_weight", 1000)
-                current_weight = safe_int(item.get('peso'))
-                if current_weight > 0:
-                    progress = min(current_weight / adult_weight, 1.0)
-                    st.metric("📈 Progreso de peso", f"{current_weight}g / {adult_weight}g")
-                    st.progress(progress, text=f"{progress*100:.1f}% del peso adulto")
-                else:
-                    st.info("Registra el peso para ver el progreso.")
-
-                # Edad estimada
-                if current_weight > 0:
-                    estimated_age = estimate_age(current_weight, species_info)
-                    if estimated_age is not None:
-                        if estimated_age >= species_info.get("months_to_adult", 24):
-                            st.metric("📅 Edad estimada", "Adulto")
-                        else:
-                            st.metric("📅 Edad estimada", f"~{estimated_age} meses")
-                        st.caption("⏳ Estimación basada en peso y especie")
-                    else:
-                        st.info("🕒 No se puede estimar la edad (datos insuficientes).")
-                else:
-                    st.info("🕒 Registra el peso para estimar la edad.")
-
-        st.divider()
-
-        # ---- GRÁFICO DE DIETA (solo para omnívoros) ----
-        if species_info.get("diet_type") == "omnivoro":
-            st.subheader("🥗 Variabilidad de la dieta")
-            if alimentacion and len(alimentacion) > 0:
-                df_alim = pd.DataFrame(alimentacion)
-                df_alim['categoria'] = df_alim['tipo_alimento'].apply(classify_food)
-                counts = df_alim['categoria'].value_counts().reset_index()
-                counts.columns = ['Categoría', 'Conteo']
-                fig = px.bar(counts, x='Categoría', y='Conteo', color='Categoría',
-                             title='Distribución de tipos de alimento consumidos',
-                             labels={'Conteo': 'Número de registros'})
-                fig.update_layout(template='plotly_dark', showlegend=False)
-                st.plotly_chart(fig, use_container_width=True)
-
-                with st.expander("📋 Detalle de alimentos clasificados"):
-                    st.dataframe(df_alim[['fecha', 'tipo_alimento', 'categoria']].head(10), use_container_width=True)
-
-                if 'insecto' not in counts['Categoría'].values:
-                    st.warning("⚠️ No se han registrado insectos en la dieta. Los dragones barbudos necesitan proteína animal.")
-                if 'verdura' not in counts['Categoría'].values:
-                    st.warning("⚠️ No se han registrado verduras. La dieta debe incluir vegetales de hoja verde.")
-                if 'fruta' not in counts['Categoría'].values:
-                    st.info("🍎 Aunque no esencial, la fruta puede ofrecerse como premio ocasional.")
-            else:
-                st.info("Registra alimentaciones para ver la variedad de la dieta.")
             st.divider()
 
-        # ---- Gráfico de peso ----
-        st.subheader("📈 Evolución de peso")
-        if peso_hist and len(peso_hist) > 0:
-            try:
-                df_peso = pd.DataFrame(peso_hist)
-                df_peso['fecha'] = pd.to_datetime(df_peso['fecha']).dt.date
-                df_peso = df_peso.sort_values('fecha')
-                fig = px.line(df_peso, x='fecha', y='peso',
-                              title='Evolución del peso registrado (tabla Peso)',
-                              labels={'peso': 'Peso (g)', 'fecha': 'Fecha'})
-                fig.update_layout(template='plotly_dark')
-                fig.update_xaxes(tickformat="%Y-%m-%d")
-                st.plotly_chart(fig, use_container_width=True)
-            except Exception as e:
-                st.info(f"No se pudo generar el gráfico: {str(e)}")
-        elif alimentacion and len(alimentacion) > 0:
-            try:
-                df_alim = pd.DataFrame(alimentacion)
-                if 'peso_alimento' in df_alim.columns and not df_alim['peso_alimento'].isnull().all():
-                    df_alim['fecha'] = pd.to_datetime(df_alim['fecha']).dt.date
-                    df_alim = df_alim.sort_values('fecha')
-                    fig = px.line(df_alim, x='fecha', y='peso_alimento',
-                                  title='Evolución del peso (desde alimentación)',
-                                  labels={'peso_alimento': 'Peso (g)', 'fecha': 'Fecha'})
+            # ---- Información del ejemplar ----
+            st.subheader("📋 Información del ejemplar")
+            col_info1, col_info2 = st.columns(2)
+            with col_info1:
+                st.write(f"**📛 Nombre:** {item.get('name', 'Sin nombre')}")
+                st.write(f"**🔬 Especie:** {item.get('species', 'N/A')}")
+                st.write(f"**🧬 Fase/Gen:** {item.get('fase', 'N/A')}")
+            with col_info2:
+                st.write(f"**⚥ Sexo:** {item.get('sex', 'N/A')}")
+                st.write(f"**📄 Pedimento:** {item.get('pedimento', 'N/A')}")
+                st.write(f"**📝 Notas:** {item.get('notas', 'N/A')}")
+
+            st.divider()
+
+            # ---- Recomendaciones ----
+            st.subheader("🧠 Recomendaciones personalizadas")
+            with st.container():
+                col_rec1, col_rec2 = st.columns([2, 1])
+                with col_rec1:
+                    # Alimentación
+                    if alimentacion and len(alimentacion) > 0:
+                        last_feed_date_str = alimentacion[0].get('fecha')
+                        try:
+                            last_feed_date = datetime.strptime(last_feed_date_str[:10], "%Y-%m-%d")
+                            next_feed_recommended = last_feed_date + timedelta(days=feed_interval)
+                            days_until = (next_feed_recommended - datetime.now()).days
+                            if days_until <= 0:
+                                st.error(f"⚠️ **Alerta**: ¡Han pasado {abs(days_until)} días! (Intervalo: cada {feed_interval} días)")
+                            else:
+                                st.success(f"✅ Próxima alimentación en {days_until} días (cada {feed_interval} días)")
+                        except:
+                            st.info("ℹ️ No se pudo calcular (fecha inválida).")
+                    else:
+                        st.info(f"ℹ️ Recomendado: alimentar cada {feed_interval} días.")
+
+                    # Muda
+                    shed_interval = species_info.get("shed_interval", 30)
+                    if muda and len(muda) > 0:
+                        last_shed_date_str = muda[0].get('fecha')
+                        try:
+                            last_shed_date = datetime.strptime(last_shed_date_str[:10], "%Y-%m-%d")
+                            next_shed_estimated = last_shed_date + timedelta(days=shed_interval)
+                            days_until_shed = (next_shed_estimated - datetime.now()).days
+                            if days_until_shed <= 0:
+                                st.warning(f"🔄 Posible muda inminente (intervalo: {shed_interval} días).")
+                            else:
+                                st.info(f"🔄 Próxima muda estimada en {days_until_shed} días.")
+                        except:
+                            st.info("ℹ️ No se pudo calcular.")
+                    else:
+                        st.info(f"ℹ️ La especie {species_name} muda cada {shed_interval} días aprox.")
+
+                    # Condiciones
+                    temp_min, temp_max = species_info.get("temp_range", (25, 30))
+                    hum = species_info.get("humidity", 50)
+                    st.write(f"🌡️ **Condiciones ideales**: {temp_min}°C - {temp_max}°C, humedad ~{hum}%.")
+                    st.write(f"🍽️ **Dieta**: {species_info.get('diet', 'N/A')}")
+                    st.write(f"🏠 **Terrario**: {species_info.get('enclosure', 'N/A')}")
+
+                with col_rec2:
+                    adult_weight = species_info.get("adult_weight", 1000)
+                    current_weight = safe_int(item.get('peso'))
+                    if current_weight > 0:
+                        progress = min(current_weight / adult_weight, 1.0)
+                        st.metric("📈 Progreso", f"{current_weight}g / {adult_weight}g")
+                        st.progress(progress, text=f"{progress*100:.1f}% adulto")
+                    else:
+                        st.info("Registra peso para ver progreso.")
+
+                    if current_weight > 0:
+                        estimated_age = estimate_age(current_weight, species_info)
+                        if estimated_age is not None:
+                            if estimated_age >= species_info.get("months_to_adult", 24):
+                                st.metric("📅 Edad estimada", "Adulto")
+                            else:
+                                st.metric("📅 Edad estimada", f"~{estimated_age} meses")
+                            st.caption("⏳ Basado en peso y especie")
+                        else:
+                            st.info("🕒 No se puede estimar.")
+                    else:
+                        st.info("🕒 Registra peso para estimar edad.")
+
+            st.divider()
+
+            # ---- Gráfico de dieta (omnívoros) ----
+            if species_info.get("diet_type") == "omnivoro":
+                st.subheader("🥗 Variabilidad de la dieta")
+                if alimentacion and len(alimentacion) > 0:
+                    df_alim = pd.DataFrame(alimentacion)
+                    df_alim['categoria'] = df_alim['tipo_alimento'].apply(classify_food)
+                    counts = df_alim['categoria'].value_counts().reset_index()
+                    counts.columns = ['Categoría', 'Conteo']
+                    fig = px.bar(counts, x='Categoría', y='Conteo', color='Categoría',
+                                 title='Distribución de alimentos consumidos',
+                                 labels={'Conteo': 'Número de registros'})
+                    fig.update_layout(template='plotly_dark', showlegend=False)
+                    st.plotly_chart(fig, use_container_width=True)
+
+                    with st.expander("📋 Detalle de alimentos"):
+                        st.dataframe(df_alim[['fecha', 'tipo_alimento', 'categoria']].head(10), use_container_width=True)
+
+                    if 'insecto' not in counts['Categoría'].values:
+                        st.warning("⚠️ No se han registrado insectos. ¡Necesitan proteína animal!")
+                    if 'verdura' not in counts['Categoría'].values:
+                        st.warning("⚠️ No se han registrado verduras. ¡Incluye vegetales de hoja verde!")
+                    if 'fruta' not in counts['Categoría'].values:
+                        st.info("🍎 La fruta puede ofrecerse como premio ocasional.")
+                else:
+                    st.info("Registra alimentaciones para ver la variedad de la dieta.")
+                st.divider()
+
+            # ---- Gráfico de peso ----
+            st.subheader("📈 Evolución de peso")
+            if peso_hist and len(peso_hist) > 0:
+                try:
+                    df_peso = pd.DataFrame(peso_hist)
+                    df_peso['fecha'] = pd.to_datetime(df_peso['fecha']).dt.date
+                    df_peso = df_peso.sort_values('fecha')
+                    fig = px.line(df_peso, x='fecha', y='peso',
+                                  title='Evolución del peso (tabla Peso)',
+                                  labels={'peso': 'Peso (g)', 'fecha': 'Fecha'})
                     fig.update_layout(template='plotly_dark')
                     fig.update_xaxes(tickformat="%Y-%m-%d")
                     st.plotly_chart(fig, use_container_width=True)
+                except Exception as e:
+                    st.info(f"No se pudo generar el gráfico: {str(e)}")
+            elif alimentacion and len(alimentacion) > 0:
+                try:
+                    df_alim = pd.DataFrame(alimentacion)
+                    if 'peso_alimento' in df_alim.columns and not df_alim['peso_alimento'].isnull().all():
+                        df_alim['fecha'] = pd.to_datetime(df_alim['fecha']).dt.date
+                        df_alim = df_alim.sort_values('fecha')
+                        fig = px.line(df_alim, x='fecha', y='peso_alimento',
+                                      title='Evolución del peso (desde alimentación)',
+                                      labels={'peso_alimento': 'Peso (g)', 'fecha': 'Fecha'})
+                        fig.update_layout(template='plotly_dark')
+                        fig.update_xaxes(tickformat="%Y-%m-%d")
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.info("No hay datos de peso en alimentación.")
+                except Exception as e:
+                    st.info(f"No se pudo generar el gráfico: {str(e)}")
+            else:
+                st.info("Registra pesos en 'Registro de Peso' para ver la evolución.")
+
+            # ---- Historial ----
+            st.subheader("📋 Historial completo")
+            tabs = st.tabs(["🍽️ Alimentación", "🔄 Muda", "⚖️ Peso", "🏥 Veterinario"])
+
+            with tabs[0]:
+                if alimentacion:
+                    df = pd.DataFrame(alimentacion)
+                    df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
+                    if 'fecha' in df:
+                        df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
+                    if 'tipo_alimento' in df:
+                        df['categoría'] = df['tipo_alimento'].apply(classify_food)
+                    st.dataframe(df, use_container_width=True, height=300)
+                    csv = df.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 Descargar CSV", data=csv, file_name=f"alimentacion_{unique_id}.csv", mime="text/csv")
                 else:
-                    st.info("No hay datos de peso en alimentación.")
-            except Exception as e:
-                st.info(f"No se pudo generar el gráfico: {str(e)}")
-        else:
-            st.info("Registra pesos en 'Registro de Peso' para ver la evolución.")
+                    st.info("Sin registros de alimentación.")
 
-        # ---- Historial (tabs) ----
-        st.subheader("📋 Historial completo")
-        tabs = st.tabs(["🍽️ Alimentación", "🔄 Muda", "⚖️ Peso", "🏥 Veterinario"])
+            with tabs[1]:
+                if muda:
+                    df = pd.DataFrame(muda)
+                    df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
+                    if 'fecha' in df:
+                        df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
+                    st.dataframe(df, use_container_width=True, height=300)
+                    csv = df.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 Descargar CSV", data=csv, file_name=f"muda_{unique_id}.csv", mime="text/csv")
+                else:
+                    st.info("Sin registros de muda.")
 
-        with tabs[0]:
-            if alimentacion:
-                df = pd.DataFrame(alimentacion)
-                df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
-                if 'fecha' in df:
-                    df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
-                if 'tipo_alimento' in df:
-                    df['categoría'] = df['tipo_alimento'].apply(classify_food)
-                st.dataframe(df, use_container_width=True, height=300)
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Descargar CSV", data=csv, file_name=f"alimentacion_{unique_id}.csv", mime="text/csv")
-            else:
-                st.info("Sin registros de alimentación.")
+            with tabs[2]:
+                if peso_hist:
+                    df = pd.DataFrame(peso_hist)
+                    df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
+                    if 'fecha' in df:
+                        df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
+                    st.dataframe(df, use_container_width=True, height=300)
+                    csv = df.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 Descargar CSV", data=csv, file_name=f"peso_{unique_id}.csv", mime="text/csv")
+                else:
+                    st.info("Sin registros de peso.")
 
-        with tabs[1]:
-            if muda:
-                df = pd.DataFrame(muda)
-                df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
-                if 'fecha' in df:
-                    df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
-                st.dataframe(df, use_container_width=True, height=300)
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Descargar CSV", data=csv, file_name=f"muda_{unique_id}.csv", mime="text/csv")
-            else:
-                st.info("Sin registros de muda.")
+            with tabs[3]:
+                if veterinario:
+                    df = pd.DataFrame(veterinario)
+                    df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
+                    if 'fecha' in df:
+                        df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
+                    st.dataframe(df, use_container_width=True, height=300)
+                    csv = df.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 Descargar CSV", data=csv, file_name=f"veterinario_{unique_id}.csv", mime="text/csv")
+                else:
+                    st.info("Sin registros veterinarios.")
 
-        with tabs[2]:
-            if peso_hist:
-                df = pd.DataFrame(peso_hist)
-                df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
-                if 'fecha' in df:
-                    df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
-                st.dataframe(df, use_container_width=True, height=300)
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Descargar CSV", data=csv, file_name=f"peso_{unique_id}.csv", mime="text/csv")
-            else:
-                st.info("Sin registros de peso.")
-
-        with tabs[3]:
-            if veterinario:
-                df = pd.DataFrame(veterinario)
-                df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
-                if 'fecha' in df:
-                    df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
-                st.dataframe(df, use_container_width=True, height=300)
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Descargar CSV", data=csv, file_name=f"veterinario_{unique_id}.csv", mime="text/csv")
-            else:
-                st.info("Sin registros veterinarios.")
-
-# ---- NUEVO EJEMPLAR (con campo "fase") ----
+# ---- NUEVO EJEMPLAR ----
 elif menu == "➕ Nuevo Ejemplar":
     st.header("➕ Registrar nuevo ejemplar")
     with st.form("new_reptile", clear_on_submit=True):
@@ -856,53 +834,55 @@ elif menu == "➕ Nuevo Ejemplar":
                     supabase.table("reptiles").insert(data).execute()
                     st.success(f"✅ Ejemplar **{u_id}** registrado correctamente.")
                     st.cache_data.clear()
+                    st.session_state.selected_reptile = u_id  # Auto-seleccionar
+                    st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
 
-# ---- ALIMENTACIÓN (con desplegable dinámico) ----
+# ---- ALIMENTACIÓN ----
 elif menu == "🍽️ Alimentación":
     st.header("🍽️ Registrar alimentación")
     reptiles = get_reptiles(st.session_state.username)
     if not reptiles:
         st.warning("Primero registra un ejemplar.")
     else:
-        opciones = {f"{r['unique_id']} - {r.get('name', 'Sin nombre')}": r for r in reptiles}
-        selected = st.selectbox("Selecciona el ejemplar", list(opciones.keys()))
-        item = opciones[selected]
-        unique_id = item['unique_id']
-        especie = item.get('species', '')
-        species_info = get_species_info(especie)
-        alimentos = species_info.get('alimentos_sugeridos', None)
+        st.subheader("🦎 Selecciona un ejemplar")
+        item = mostrar_botones_ejemplares(reptiles)
+        
+        if not item:
+            st.warning("Selecciona un ejemplar de los botones arriba.")
+        else:
+            unique_id = item['unique_id']
+            especie = item.get('species', '')
+            species_info = get_species_info(especie)
+            alimentos = species_info.get('alimentos_sugeridos', None)
 
-        with st.form("feed_form"):
-            fecha = st.date_input("📅 Fecha", value=datetime.now())
-
-            if alimentos:
-                tipo_alimento = st.selectbox("🍗 Tipo de alimento", alimentos, help="Selecciona de la lista sugerida para esta especie")
-            else:
-                tipo_alimento = st.text_input("🍗 Tipo de alimento", help="Escribe el alimento (no hay lista predefinida para esta especie)")
-
-            peso_alimento = st.number_input("⚖️ Peso del alimento (g)", min_value=0, step=5)
-            notas = st.text_area("📝 Notas adicionales (opcional)")
-
-            submitted = st.form_submit_button("💾 Guardar alimentación")
-            if submitted:
-                if not tipo_alimento:
-                    st.error("El tipo de alimento es obligatorio.")
+            with st.form("feed_form"):
+                fecha = st.date_input("📅 Fecha", value=datetime.now())
+                if alimentos:
+                    tipo_alimento = st.selectbox("🍗 Tipo de alimento", alimentos, help="Selecciona de la lista sugerida")
                 else:
-                    data = {
-                        "unique_id": unique_id,
-                        "owner_name": st.session_state.username,
-                        "fecha": str(fecha),
-                        "tipo_alimento": tipo_alimento,
-                        "peso_alimento": int(peso_alimento)
-                    }
-                    try:
-                        supabase.table("alimentacion").insert(data).execute()
-                        st.success("✅ Alimentación registrada.")
-                        st.cache_data.clear()
-                    except Exception as e:
-                        st.error(f"❌ Error: {e}")
+                    tipo_alimento = st.text_input("🍗 Tipo de alimento", help="Escribe el alimento")
+                peso_alimento = st.number_input("⚖️ Peso del alimento (g)", min_value=0, step=5)
+                notas = st.text_area("📝 Notas adicionales (opcional)")
+                submitted = st.form_submit_button("💾 Guardar alimentación")
+                if submitted:
+                    if not tipo_alimento:
+                        st.error("El tipo de alimento es obligatorio.")
+                    else:
+                        data = {
+                            "unique_id": unique_id,
+                            "owner_name": st.session_state.username,
+                            "fecha": str(fecha),
+                            "tipo_alimento": tipo_alimento,
+                            "peso_alimento": int(peso_alimento)
+                        }
+                        try:
+                            supabase.table("alimentacion").insert(data).execute()
+                            st.success("✅ Alimentación registrada.")
+                            st.cache_data.clear()
+                        except Exception as e:
+                            st.error(f"❌ Error: {e}")
 
 # ---- MUDA ----
 elif menu == "🔄 Muda":
@@ -911,27 +891,30 @@ elif menu == "🔄 Muda":
     if not reptiles:
         st.warning("Primero registra un ejemplar.")
     else:
-        opciones = {f"{r['unique_id']} - {r.get('name', 'Sin nombre')}": r for r in reptiles}
-        selected = st.selectbox("Selecciona el ejemplar", list(opciones.keys()))
-        item = opciones[selected]
-        unique_id = item['unique_id']
-        with st.form("shed_form"):
-            fecha = st.date_input("📅 Fecha", value=datetime.now())
-            comentarios = st.text_area("📝 Observaciones sobre la muda")
-            submitted = st.form_submit_button("💾 Guardar muda")
-            if submitted:
-                data = {
-                    "unique_id": unique_id,
-                    "owner_name": st.session_state.username,
-                    "fecha": str(fecha),
-                    "comentarios": comentarios
-                }
-                try:
-                    supabase.table("muda").insert(data).execute()
-                    st.success("✅ Muda registrada.")
-                    st.cache_data.clear()
-                except Exception as e:
-                    st.error(f"❌ Error: {e}")
+        st.subheader("🦎 Selecciona un ejemplar")
+        item = mostrar_botones_ejemplares(reptiles)
+        
+        if not item:
+            st.warning("Selecciona un ejemplar de los botones arriba.")
+        else:
+            unique_id = item['unique_id']
+            with st.form("shed_form"):
+                fecha = st.date_input("📅 Fecha", value=datetime.now())
+                comentarios = st.text_area("📝 Observaciones sobre la muda")
+                submitted = st.form_submit_button("💾 Guardar muda")
+                if submitted:
+                    data = {
+                        "unique_id": unique_id,
+                        "owner_name": st.session_state.username,
+                        "fecha": str(fecha),
+                        "comentarios": comentarios
+                    }
+                    try:
+                        supabase.table("muda").insert(data).execute()
+                        st.success("✅ Muda registrada.")
+                        st.cache_data.clear()
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
 
 # ---- REGISTRO DE PESO ----
 elif menu == "⚖️ Registro de Peso":
@@ -940,38 +923,39 @@ elif menu == "⚖️ Registro de Peso":
     if not reptiles:
         st.warning("Primero registra un ejemplar.")
     else:
-        opciones = {f"{r['unique_id']} - {r.get('name', 'Sin nombre')}": r for r in reptiles}
-        selected = st.selectbox("Selecciona el ejemplar", list(opciones.keys()))
-        item = opciones[selected]
-        unique_id = item['unique_id']
-        current_peso = safe_int(item.get('peso'))
-
-        st.info(f"Peso actual registrado: **{current_peso} g**")
-
-        with st.form("peso_form"):
-            fecha = st.date_input("📅 Fecha", value=datetime.now())
-            nuevo_peso = st.number_input("⚖️ Nuevo peso (g)", min_value=0, step=10, value=current_peso)
-            notas = st.text_area("📝 Notas (opcional)")
-            submitted = st.form_submit_button("💾 Guardar peso")
-            if submitted:
-                if nuevo_peso <= 0:
-                    st.error("El peso debe ser mayor a 0.")
-                else:
-                    try:
-                        data_peso = {
-                            "unique_id": unique_id,
-                            "owner_name": st.session_state.username,
-                            "fecha": str(fecha),
-                            "peso": int(nuevo_peso),
-                            "notas": notas
-                        }
-                        supabase.table("peso").insert(data_peso).execute()
-                        supabase.table("reptiles").update({"peso": int(nuevo_peso)}).eq("unique_id", unique_id).execute()
-                        st.success(f"✅ Peso actualizado: {nuevo_peso} g")
-                        st.cache_data.clear()
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error al guardar peso: {e}")
+        st.subheader("🦎 Selecciona un ejemplar")
+        item = mostrar_botones_ejemplares(reptiles)
+        
+        if not item:
+            st.warning("Selecciona un ejemplar de los botones arriba.")
+        else:
+            unique_id = item['unique_id']
+            current_peso = safe_int(item.get('peso'))
+            st.info(f"Peso actual registrado: **{current_peso} g**")
+            with st.form("peso_form"):
+                fecha = st.date_input("📅 Fecha", value=datetime.now())
+                nuevo_peso = st.number_input("⚖️ Nuevo peso (g)", min_value=0, step=10, value=current_peso)
+                notas = st.text_area("📝 Notas (opcional)")
+                submitted = st.form_submit_button("💾 Guardar peso")
+                if submitted:
+                    if nuevo_peso <= 0:
+                        st.error("El peso debe ser mayor a 0.")
+                    else:
+                        try:
+                            data_peso = {
+                                "unique_id": unique_id,
+                                "owner_name": st.session_state.username,
+                                "fecha": str(fecha),
+                                "peso": int(nuevo_peso),
+                                "notas": notas
+                            }
+                            supabase.table("peso").insert(data_peso).execute()
+                            supabase.table("reptiles").update({"peso": int(nuevo_peso)}).eq("unique_id", unique_id).execute()
+                            st.success(f"✅ Peso actualizado: {nuevo_peso} g")
+                            st.cache_data.clear()
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Error al guardar peso: {e}")
 
 # ---- VETERINARIO ----
 elif menu == "🏥 Veterinario":
@@ -980,31 +964,34 @@ elif menu == "🏥 Veterinario":
     if not reptiles:
         st.warning("Primero registra un ejemplar.")
     else:
-        opciones = {f"{r['unique_id']} - {r.get('name', 'Sin nombre')}": r for r in reptiles}
-        selected = st.selectbox("Selecciona el ejemplar", list(opciones.keys()))
-        item = opciones[selected]
-        unique_id = item['unique_id']
-        with st.form("vet_form"):
-            fecha = st.date_input("📅 Fecha", value=datetime.now())
-            evaluacion = st.text_area("🩺 Evaluación médica")
-            tratamiento = st.text_input("💊 Tratamiento recetado")
-            proxima_cita = st.date_input("📅 Próxima cita (opcional)", value=None)
-            submitted = st.form_submit_button("💾 Guardar registro")
-            if submitted:
-                data = {
-                    "unique_id": unique_id,
-                    "owner_name": st.session_state.username,
-                    "fecha": str(fecha),
-                    "evaluacion_medica": evaluacion,
-                    "tratamiento": tratamiento,
-                    "proxima_cita": str(proxima_cita) if proxima_cita else None
-                }
-                try:
-                    supabase.table("veterinario").insert(data).execute()
-                    st.success("✅ Registro veterinario guardado.")
-                    st.cache_data.clear()
-                except Exception as e:
-                    st.error(f"❌ Error: {e}")
+        st.subheader("🦎 Selecciona un ejemplar")
+        item = mostrar_botones_ejemplares(reptiles)
+        
+        if not item:
+            st.warning("Selecciona un ejemplar de los botones arriba.")
+        else:
+            unique_id = item['unique_id']
+            with st.form("vet_form"):
+                fecha = st.date_input("📅 Fecha", value=datetime.now())
+                evaluacion = st.text_area("🩺 Evaluación médica")
+                tratamiento = st.text_input("💊 Tratamiento recetado")
+                proxima_cita = st.date_input("📅 Próxima cita (opcional)", value=None)
+                submitted = st.form_submit_button("💾 Guardar registro")
+                if submitted:
+                    data = {
+                        "unique_id": unique_id,
+                        "owner_name": st.session_state.username,
+                        "fecha": str(fecha),
+                        "evaluacion_medica": evaluacion,
+                        "tratamiento": tratamiento,
+                        "proxima_cita": str(proxima_cita) if proxima_cita else None
+                    }
+                    try:
+                        supabase.table("veterinario").insert(data).execute()
+                        st.success("✅ Registro veterinario guardado.")
+                        st.cache_data.clear()
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
 
 # ---- ESTADÍSTICAS GLOBALES ----
 elif menu == "📈 Estadísticas Globales":
@@ -1038,7 +1025,6 @@ elif menu == "📈 Estadísticas Globales":
             fig3.update_layout(template='plotly_dark')
             st.plotly_chart(fig3, use_container_width=True)
 
-        # Distribución por fase
         if 'fase' in df_species.columns:
             fase_counts = df_species['fase'].value_counts().reset_index()
             fase_counts.columns = ['Fase', 'Cantidad']
