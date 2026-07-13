@@ -217,6 +217,36 @@ st.markdown("""
         background: #4caf50;
         border-radius: 3px;
     }
+    
+    /* Estilos para los botones de selección de ejemplares */
+    .reptile-button {
+        background-color: #2a2f39;
+        color: #eaeef2;
+        border: 1px solid #3a4050;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    .reptile-button:hover {
+        background-color: #3a4050;
+        border-color: #4caf50;
+    }
+    .reptile-button-active {
+        background-color: #4caf50;
+        color: white;
+        border: 1px solid #4caf50;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        font-weight: bold;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -241,7 +271,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO DE ESPECIES (CON ALIMENTOS SUGERIDOS) ----------
+# ---------- BASE DE CONOCIMIENTO DE ESPECIES ----------
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -474,7 +504,7 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
-    st.caption("🐍 RIARE Exotic's v2.9")
+    st.caption("🐍 RIARE Exotic's v3.0")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -503,7 +533,7 @@ def get_peso_history(unique_id):
 
 # ---------- PÁGINAS ----------
 
-# ---- PANEL DE CONTROL ----
+# ---- PANEL DE CONTROL (con botones) ----
 if menu == "📊 Panel de Control":
     st.header("📊 Panel de Control")
     reptiles = get_reptiles(st.session_state.username)
@@ -511,11 +541,50 @@ if menu == "📊 Panel de Control":
     if not reptiles:
         st.info("No hay ejemplares registrados. Ve a 'Nuevo Ejemplar' para agregar uno.")
     else:
-        opciones = {f"{r['unique_id']} - {r.get('name', 'Sin nombre')} ({r.get('species', 'N/A')})": r for r in reptiles}
-        selected_key = st.selectbox("🔍 Selecciona un ejemplar", list(opciones.keys()))
-        item = opciones[selected_key]
+        # ---- INICIO: SELECCIÓN DE EJEMPLAR CON BOTONES ----
+        st.subheader("🔍 Selecciona un ejemplar")
+        
+        # Inicializar estado de selección si no existe
+        if "selected_reptile_id" not in st.session_state:
+            st.session_state.selected_reptile_id = reptiles[0]['unique_id']
+        
+        # Crear botones en filas de 3
+        cols = st.columns(3)
+        for idx, r in enumerate(reptiles):
+            col = cols[idx % 3]
+            # Determinar si este botón está activo
+            is_active = (st.session_state.selected_reptile_id == r['unique_id'])
+            # Crear un label para el botón
+            label = f"{r.get('name', 'Sin nombre')} 🐍" if r.get('name') else f"{r['unique_id']}"
+            
+            # Estilo condicional
+            if is_active:
+                # Botón activo (verde)
+                button_clicked = col.button(
+                    label, 
+                    key=f"btn_{r['unique_id']}", 
+                    use_container_width=True,
+                    type="primary"  # Esto lo pone verde en Streamlit
+                )
+            else:
+                # Botón inactivo (gris)
+                button_clicked = col.button(
+                    label, 
+                    key=f"btn_{r['unique_id']}", 
+                    use_container_width=True
+                )
+            
+            # Si se hizo clic, actualizar selección
+            if button_clicked:
+                st.session_state.selected_reptile_id = r['unique_id']
+                st.rerun()
+        
+        # Obtener el ejemplar seleccionado
+        selected_reptile = next((r for r in reptiles if r['unique_id'] == st.session_state.selected_reptile_id), reptiles[0])
+        item = selected_reptile
         unique_id = item['unique_id']
-
+        # ---- FIN: SELECCIÓN DE EJEMPLAR CON BOTONES ----
+        
         species_name = item.get('species', '')
         species_info = get_species_info(species_name)
         feed_interval = species_info.get("feed_interval", 7)
@@ -808,7 +877,6 @@ elif menu == "🍽️ Alimentación":
         with st.form("feed_form"):
             fecha = st.date_input("📅 Fecha", value=datetime.now())
 
-            # Campo dinámico: selectbox si hay lista, si no, text_input
             if alimentos:
                 tipo_alimento = st.selectbox("🍗 Tipo de alimento", alimentos, help="Selecciona de la lista sugerida para esta especie")
             else:
