@@ -241,7 +241,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO DE ESPECIES ----------
+# ---------- BASE DE CONOCIMIENTO DE ESPECIES (CON ALIMENTOS SUGERIDOS) ----------
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -254,7 +254,8 @@ SPECIES_DB = {
         "notes": "Requiere ramas para trepar y escondites.",
         "birth_weight": 50,
         "months_to_adult": 36,
-        "diet_type": "carnivoro"
+        "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Conejo"]
     },
     "Python regius": {
         "feed_interval": 7,
@@ -267,7 +268,8 @@ SPECIES_DB = {
         "notes": "Necesita alta humedad durante la muda.",
         "birth_weight": 60,
         "months_to_adult": 24,
-        "diet_type": "carnivoro"
+        "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Rata", "Pinky", "Rata africana", "Fuzzy", "Ratón"]
     },
     "Pantherophis guttatus": {
         "feed_interval": 5,
@@ -280,7 +282,8 @@ SPECIES_DB = {
         "notes": "Muy activo, necesita espacio para explorar.",
         "birth_weight": 10,
         "months_to_adult": 18,
-        "diet_type": "carnivoro"
+        "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Ratón", "Pinky", "Fuzzy"]
     },
     "Lampropeltis getula": {
         "feed_interval": 7,
@@ -293,7 +296,8 @@ SPECIES_DB = {
         "notes": "Puede ser caníbal, mantener separados.",
         "birth_weight": 15,
         "months_to_adult": 20,
-        "diet_type": "carnivoro"
+        "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Ratón", "Lagartija", "Pinky"]
     },
     "Morelia spilota": {
         "feed_interval": 10,
@@ -306,7 +310,8 @@ SPECIES_DB = {
         "notes": "Arborícola, necesita ramas y altura.",
         "birth_weight": 40,
         "months_to_adult": 30,
-        "diet_type": "carnivoro"
+        "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Codorniz"]
     },
     "Piton Bola": {
         "feed_interval": 7,
@@ -319,7 +324,8 @@ SPECIES_DB = {
         "notes": "Especie común en cautiverio.",
         "birth_weight": 60,
         "months_to_adult": 24,
-        "diet_type": "carnivoro"
+        "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Rata", "Pinky", "Rata africana", "Fuzzy", "Ratón"]
     },
     "Pogona Viticeps": {
         "feed_interval": 1,
@@ -332,7 +338,8 @@ SPECIES_DB = {
         "notes": "Necesita luz UVB y gradiente térmico.",
         "birth_weight": 5,
         "months_to_adult": 12,
-        "diet_type": "omnivoro"
+        "diet_type": "omnivoro",
+        "alimentos_sugeridos": ["Verdura", "Fruta", "Hojas verdes", "Insecto"]
     }
 }
 DEFAULT_SPECIES = {
@@ -346,7 +353,8 @@ DEFAULT_SPECIES = {
     "notes": "Sin información adicional.",
     "birth_weight": 20,
     "months_to_adult": 24,
-    "diet_type": "carnivoro"
+    "diet_type": "carnivoro",
+    "alimentos_sugeridos": None
 }
 
 # ---------- CLASIFICACIÓN DE ALIMENTOS ----------
@@ -427,7 +435,6 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    # Contenedor centrado con HTML/CSS
     st.markdown("""
     <div class="login-container">
         <div class="login-box">
@@ -437,7 +444,6 @@ if not st.session_state.authenticated:
     </div>
     """, unsafe_allow_html=True)
     
-    # El input y el botón deben estar fuera del HTML para que funcionen
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         username = st.text_input("👤 Nombre de Propietario", key="login_user", placeholder="Tu nombre", label_visibility="collapsed")
@@ -468,7 +474,7 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
-    st.caption("🐍 RIARE Exotic's v2.8")
+    st.caption("🐍 RIARE Exotic's v2.9")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -784,7 +790,7 @@ elif menu == "➕ Nuevo Ejemplar":
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
 
-# ---- ALIMENTACIÓN ----
+# ---- ALIMENTACIÓN (con desplegable dinámico) ----
 elif menu == "🍽️ Alimentación":
     st.header("🍽️ Registrar alimentación")
     reptiles = get_reptiles(st.session_state.username)
@@ -795,26 +801,40 @@ elif menu == "🍽️ Alimentación":
         selected = st.selectbox("Selecciona el ejemplar", list(opciones.keys()))
         item = opciones[selected]
         unique_id = item['unique_id']
+        especie = item.get('species', '')
+        species_info = get_species_info(especie)
+        alimentos = species_info.get('alimentos_sugeridos', None)
+
         with st.form("feed_form"):
             fecha = st.date_input("📅 Fecha", value=datetime.now())
-            tipo_alimento = st.text_input("🍗 Tipo de alimento", help="Ej: grillo, lechuga, manzana, nopal, etc.")
+
+            # Campo dinámico: selectbox si hay lista, si no, text_input
+            if alimentos:
+                tipo_alimento = st.selectbox("🍗 Tipo de alimento", alimentos, help="Selecciona de la lista sugerida para esta especie")
+            else:
+                tipo_alimento = st.text_input("🍗 Tipo de alimento", help="Escribe el alimento (no hay lista predefinida para esta especie)")
+
             peso_alimento = st.number_input("⚖️ Peso del alimento (g)", min_value=0, step=5)
             notas = st.text_area("📝 Notas adicionales (opcional)")
+
             submitted = st.form_submit_button("💾 Guardar alimentación")
             if submitted:
-                data = {
-                    "unique_id": unique_id,
-                    "owner_name": st.session_state.username,
-                    "fecha": str(fecha),
-                    "tipo_alimento": tipo_alimento,
-                    "peso_alimento": int(peso_alimento)
-                }
-                try:
-                    supabase.table("alimentacion").insert(data).execute()
-                    st.success("✅ Alimentación registrada.")
-                    st.cache_data.clear()
-                except Exception as e:
-                    st.error(f"❌ Error: {e}")
+                if not tipo_alimento:
+                    st.error("El tipo de alimento es obligatorio.")
+                else:
+                    data = {
+                        "unique_id": unique_id,
+                        "owner_name": st.session_state.username,
+                        "fecha": str(fecha),
+                        "tipo_alimento": tipo_alimento,
+                        "peso_alimento": int(peso_alimento)
+                    }
+                    try:
+                        supabase.table("alimentacion").insert(data).execute()
+                        st.success("✅ Alimentación registrada.")
+                        st.cache_data.clear()
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
 
 # ---- MUDA ----
 elif menu == "🔄 Muda":
