@@ -15,6 +15,26 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ---------- PWA: MANIFEST Y SERVICE WORKER ----------
+st.markdown("""
+<link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('Service Worker registrado'))
+      .catch((err) => console.log('Error al registrar SW:', err));
+  }
+</script>
+<style>
+  /* Ajustes para la PWA */
+  body { margin: 0; padding: 0; }
+  /* Ocultar la barra de scroll en móviles */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #1e2229; }
+  ::-webkit-scrollbar-thumb { background: #4caf50; border-radius: 3px; }
+</style>
+""", unsafe_allow_html=True)
+
 # ---------- ESTILOS CSS (tema oscuro de alto contraste) ----------
 st.markdown("""
 <style>
@@ -213,20 +233,20 @@ DEFAULT_SPECIES = {
     "diet_type": "carnivoro"
 }
 
-# ---------- CLASIFICACIÓN DE ALIMENTOS (MEJORADA) ----------
+# ---------- CLASIFICACIÓN DE ALIMENTOS ----------
 FOOD_CATEGORIES = {
     'insecto': [
         'grillo', 'tenebrio', 'gusano', 'cucaracha', 'langosta', 'saltamontes',
         'mosca', 'larva', 'zophoba', 'superworm', 'mealworm', 'cricket', 'roach',
         'hormiga', 'termita', 'escarabajo', 'polilla', 'gusano de seda', 'silk worm',
-        'chapulín', 'jabón'
+        'chapulín'
     ],
     'verdura': [
         'lechuga', 'zanahoria', 'calabacín', 'pepino', 'pimiento', 'brócoli', 'col',
         'espinaca', 'acelga', 'berza', 'diente de león', 'nopal', 'tuna', 'cardo',
         'calabaza', 'berenjena', 'judía verde', 'guisante', 'maíz', 'rábano', 'remolacha',
         'apio', 'esparrago', 'alcachofa', 'coliflor', 'repollo', 'col rizada', 'kale',
-        'hoja de mostaza', 'hoja de nabo', 'perejil', 'cilantro', 'albahaca', 'orégano'
+        'hoja de mostaza', 'hoja de nabo', 'perejil', 'cilantro', 'albahaca'
     ],
     'fruta': [
         'manzana', 'plátano', 'fresa', 'mango', 'papaya', 'pera', 'melón', 'sandía',
@@ -237,7 +257,6 @@ FOOD_CATEGORIES = {
 }
 
 def classify_food(food_text):
-    """Clasifica el tipo de alimento en: insecto, verdura, fruta, otro o desconocido."""
     if not food_text:
         return 'desconocido'
     food_lower = food_text.lower().strip()
@@ -319,7 +338,7 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
-    st.caption("🐍 Herpeto-Logistics Pro v2.7")
+    st.caption("🐍 Herpeto-Logistics Pro v2.8")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -394,11 +413,22 @@ if menu == "📊 Panel de Control":
 
         st.divider()
 
+        # ---- Información del ejemplar (incluye fase) ----
+        st.subheader("📋 Información del ejemplar")
+        col_info1, col_info2 = st.columns(2)
+        with col_info1:
+            st.write(f"**📛 Nombre:** {item.get('name', 'Sin nombre')}")
+            st.write(f"**🔬 Especie:** {item.get('species', 'N/A')}")
+            st.write(f"**🧬 Fase/Gen:** {item.get('fase', 'N/A')}")
+        with col_info2:
+            st.write(f"**⚥ Sexo:** {item.get('sex', 'N/A')}")
+            st.write(f"**📄 Pedimento:** {item.get('pedimento', 'N/A')}")
+            st.write(f"**📝 Notas:** {item.get('notas', 'N/A')}")
+
+        st.divider()
+
         # ---- Recomendaciones IA (sistema basado en reglas) ----
         st.subheader("🧠 Recomendaciones personalizadas")
-        # ========== AQUÍ PODRÍAS INTEGRAR LA API DE GROK ==========
-        # Ejemplo: respuesta_grok = llamar_a_grok(species_name, peso, alimentacion, muda)
-        # y mostrarla en un área expandible o como reemplazo de las siguientes recomendaciones.
         with st.container():
             col_rec1, col_rec2 = st.columns([2, 1])
             with col_rec1:
@@ -585,7 +615,7 @@ if menu == "📊 Panel de Control":
             else:
                 st.info("Sin registros veterinarios.")
 
-# ---- NUEVO EJEMPLAR ----
+# ---- NUEVO EJEMPLAR (con campo "fase") ----
 elif menu == "➕ Nuevo Ejemplar":
     st.header("➕ Registrar nuevo ejemplar")
     with st.form("new_reptile", clear_on_submit=True):
@@ -594,10 +624,12 @@ elif menu == "➕ Nuevo Ejemplar":
             name = st.text_input("📛 Nombre")
             species = st.text_input("🔬 Especie")
             sex = st.selectbox("⚥ Sexo", ["Macho", "Hembra", "Desconocido"])
+            fase = st.text_input("🧬 Fase / Gen (opcional)", help="Ej: Albino, Pastel, Jaguar, etc.")
         with col2:
             pedimento = st.text_input("📄 Pedimento (opcional)")
             peso = st.number_input("⚖️ Peso (g)", min_value=0, step=50)
         notas = st.text_area("📝 Notas adicionales")
+        
         submitted = st.form_submit_button("💾 Guardar ejemplar", use_container_width=True)
         if submitted:
             if species.strip() == "":
@@ -612,7 +644,8 @@ elif menu == "➕ Nuevo Ejemplar":
                     "unique_id": u_id,
                     "pedimento": pedimento,
                     "peso": int(peso),
-                    "notas": notas
+                    "notas": notas,
+                    "fase": fase  # <--- NUEVO CAMPO
                 }
                 try:
                     supabase.table("reptiles").insert(data).execute()
@@ -786,6 +819,14 @@ elif menu == "📈 Estadísticas Globales":
             fig3 = px.bar(avg_weight, x='Especie', y='Peso promedio (g)', title='Peso promedio por especie')
             fig3.update_layout(template='plotly_dark')
             st.plotly_chart(fig3, use_container_width=True)
+
+        # Distribución por fase
+        if 'fase' in df_species.columns:
+            fase_counts = df_species['fase'].value_counts().reset_index()
+            fase_counts.columns = ['Fase', 'Cantidad']
+            fig_fase = px.bar(fase_counts, x='Fase', y='Cantidad', title='Distribución por fase/gen')
+            fig_fase.update_layout(template='plotly_dark')
+            st.plotly_chart(fig_fase, use_container_width=True)
 
         st.subheader("📅 Actividad reciente")
         all_events = []
