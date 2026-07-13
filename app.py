@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 # ---------- CONFIGURACIÓN DE PÁGINA ----------
 st.set_page_config(
-    page_title="🐍 RIARE Exotic´s Pro",
+    page_title="RIARE Exotic's",
     page_icon="🦎",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -28,10 +28,70 @@ st.markdown("""
 <style>
   /* Ajustes para la PWA */
   body { margin: 0; padding: 0; }
-  /* Ocultar la barra de scroll en móviles */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: #1e2229; }
   ::-webkit-scrollbar-thumb { background: #4caf50; border-radius: 3px; }
+  
+  /* Estilo del título principal */
+  .main-title {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #4caf50;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+  }
+  .main-subtitle {
+    text-align: center;
+    color: #b0bec5;
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  /* Centrar el login */
+  .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+  }
+  .login-box {
+    background-color: #1e2229;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    max-width: 400px;
+    width: 100%;
+    border: 1px solid #2a2f39;
+  }
+  .login-box h1 {
+    color: #4caf50;
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  .login-box p {
+    color: #b0bec5;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .login-box .stTextInput > div > div {
+    background-color: #2a2f39 !important;
+    border: 1px solid #3a4050 !important;
+  }
+  .login-box .stButton > button {
+    width: 100%;
+    background-color: #4caf50;
+    color: white;
+    font-weight: bold;
+    border: none;
+    padding: 0.6rem;
+    border-radius: 8px;
+    transition: 0.3s;
+  }
+  .login-box .stButton > button:hover {
+    background-color: #388e3c;
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -306,15 +366,22 @@ def estimate_age(current_weight, species_info):
     proportion = (current_weight - birth_weight) / (adult_weight - birth_weight)
     return round(proportion * months_to_adult, 1)
 
-# ---------- AUTENTICACIÓN ----------
+# ---------- AUTENTICACIÓN CON LOGIN CENTRADO ----------
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.title("🐍 Acceso Profesional")
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        username = st.text_input("👤 Nombre de Propietario")
+    # Contenedor centrado con estilo
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+        <div class="login-box">
+            <h1>🦎 RIARE Exotic's</h1>
+            <p>Gestión profesional de reptiles</p>
+        """, unsafe_allow_html=True)
+        
+        username = st.text_input("👤 Nombre de Propietario", key="login_user", placeholder="Tu nombre")
         if st.button("🚪 Ingresar", use_container_width=True):
             if username.strip():
                 st.session_state.authenticated = True
@@ -322,7 +389,14 @@ if not st.session_state.authenticated:
                 st.rerun()
             else:
                 st.error("Por favor, introduce un nombre.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
+
+# ---------- TÍTULO PRINCIPAL (visible en todas las páginas) ----------
+st.markdown('<div class="main-title">🦎 RIARE Exotic\'s</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-subtitle">Sistema de gestión herpetológica</div>', unsafe_allow_html=True)
 
 # ---------- BARRA LATERAL ----------
 with st.sidebar:
@@ -338,7 +412,7 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
-    st.caption("🐍 Herpeto-Logistics Pro v2.8")
+    st.caption("🐍 RIARE Exotic's v2.8")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -645,7 +719,7 @@ elif menu == "➕ Nuevo Ejemplar":
                     "pedimento": pedimento,
                     "peso": int(peso),
                     "notas": notas,
-                    "fase": fase  # <--- NUEVO CAMPO
+                    "fase": fase
                 }
                 try:
                     supabase.table("reptiles").insert(data).execute()
