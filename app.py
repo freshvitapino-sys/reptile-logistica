@@ -166,10 +166,28 @@ st.markdown("""
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #1e2229; }
     ::-webkit-scrollbar-thumb { background: #4caf50; border-radius: 3px; }
+    /* Tabla comparativa */
+    .tabla-referencia {
+        background-color: #1e2229;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-top: 1rem;
+        border: 1px solid #3a4050;
+    }
+    .tabla-referencia th, .tabla-referencia td {
+        padding: 0.5rem;
+        text-align: center;
+        border-bottom: 1px solid #2a2f39;
+    }
+    .tabla-referencia th {
+        color: #4caf50;
+        font-weight: bold;
+    }
     @media (max-width: 768px) {
         .stColumns { flex-direction: column !important; }
         .stColumns > div { width: 100% !important; margin-bottom: 1rem; }
         .main-title { font-size: 1.6rem; }
+        .tabla-referencia { font-size: 0.8rem; padding: 0.5rem; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -195,34 +213,47 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- RECOMENDACIÓN DE ALIMENTACIÓN CON PESO DE PRESA ----------
-def get_feed_recommendation(weight, species):
+# ---------- RECOMENDACIÓN DE ALIMENTACIÓN CON PORCENTAJES DINÁMICOS ----------
+def calcular_recomendacion_presa(peso_serpiente):
     """
-    Retorna (intervalo_dias, nombre_presa, peso_presa_aprox)
-    según el peso de la serpiente y la especie.
-    Para pitones bola (Python regius, Piton Bola).
+    Calcula el rango de peso de la presa y la frecuencia según el peso de la pitón bola.
+    Basado en la regla del porcentaje del peso corporal.
     """
-    if species not in ["Python regius", "Piton Bola"]:
-        # Para otras especies, usar valor por defecto sin peso de presa
-        return 7, "Roedor", "N/A"
+    if peso_serpiente is None or peso_serpiente <= 0:
+        return {
+            "rango_presa": "No disponible",
+            "frecuencia": "Registra el peso para obtener recomendación",
+            "peso_min": 0,
+            "peso_max": 0,
+            "etapa": "Sin datos"
+        }
     
-    # Si no hay peso registrado, solo devolver nombre de presa sin peso
-    if weight is None or weight <= 0:
-        return 7, "Roedor (peso no registrado)", "N/A"
+    # Determinar etapa y porcentajes
+    if peso_serpiente < 500:  # Juvenil
+        porcentaje_min, porcentaje_max = 0.10, 0.15
+        frecuencia = "cada 5-7 días"
+        etapa = "Juvenil (<500g)"
+    elif peso_serpiente < 1000:  # Sub-adulto
+        porcentaje_min, porcentaje_max = 0.07, 0.10
+        frecuencia = "cada 7-10 días"
+        etapa = "Sub-adulto (500-1000g)"
+    else:  # Adulto
+        porcentaje_min, porcentaje_max = 0.05, 0.07
+        frecuencia = "cada 10-14 días"
+        etapa = "Adulto (>1000g)"
     
-    # Rangos típicos para pitones bola (peso de la serpiente -> presa)
-    if weight < 150:  # Cría
-        return 5, "Pinky", "3-6g"
-    elif weight < 300:  # Juvenil pequeño
-        return 6, "Fuzzy", "7-12g"
-    elif weight < 600:  # Juvenil mediano
-        return 7, "Ratón pequeño", "13-20g"
-    elif weight < 1000:  # Sub-adulto
-        return 10, "Rata weanling", "20-30g"
-    elif weight < 1500:  # Adulto joven
-        return 12, "Rata pequeña", "30-50g"
-    else:  # Adulto grande
-        return 14, "Rata mediana", "50-80g"
+    peso_min_presa = peso_serpiente * porcentaje_min
+    peso_max_presa = peso_serpiente * porcentaje_max
+    
+    return {
+        "rango_presa": f"{peso_min_presa:.0f}g - {peso_max_presa:.0f}g",
+        "frecuencia": frecuencia,
+        "peso_min": round(peso_min_presa),
+        "peso_max": round(peso_max_presa),
+        "etapa": etapa,
+        "porcentaje_min": f"{porcentaje_min*100:.0f}%",
+        "porcentaje_max": f"{porcentaje_max*100:.0f}%"
+    }
 
 # ---------- BASE DE CONOCIMIENTO ----------
 SPECIES_DB = {
@@ -381,14 +412,18 @@ def classify_food(food_text):
 
 # ---------- FUNCIONES AUXILIARES ----------
 def get_species_info(species_name, weight=None):
-    """Devuelve la información de la especie, actualizando feed_interval si se proporciona peso y es pitón bola."""
+    """Devuelve la información de la especie, añadiendo recomendación de presa si es pitón bola."""
     base = SPECIES_DB.get(species_name, DEFAULT_SPECIES)
-    if weight is not None and species_name in ["Python regius", "Piton Bola"]:
-        interval, prey, prey_weight = get_feed_recommendation(weight, species_name)
+    if weight is not None and weight > 0 and species_name in ["Python regius", "Piton Bola"]:
+        rec = calcular_recomendacion_presa(weight)
         base = base.copy()
-        base['feed_interval'] = interval
-        base['presa_sugerida'] = prey
-        base['peso_presa'] = prey_weight
+        base['feed_interval'] = rec.get('frecuencia', '7 días')  # se muestra como texto
+        base['presa_sugerida'] = rec.get('rango_presa', 'N/A')
+        base['peso_presa_min'] = rec.get('peso_min', 0)
+        base['peso_presa_max'] = rec.get('peso_max', 0)
+        base['etapa'] = rec.get('etapa', 'N/A')
+        base['porcentaje_min'] = rec.get('porcentaje_min', 'N/A')
+        base['porcentaje_max'] = rec.get('porcentaje_max', 'N/A')
     return base
 
 def safe_days_between(date_str):
@@ -467,7 +502,7 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.session_state.selected_reptile = None
         st.rerun()
-    st.caption("🐍 RIARE Exotic's v3.2")
+    st.caption("🐍 RIARE Exotic's v3.3")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -538,9 +573,6 @@ if menu == "📊 Panel de Control":
             species_name = item.get('species', '')
             current_weight = safe_int(item.get('peso'))
             species_info = get_species_info(species_name, current_weight)
-            feed_interval = species_info.get("feed_interval", 7)
-            prey_suggested = species_info.get("presa_sugerida", "Roedor")
-            prey_weight = species_info.get("peso_presa", "N/A")
 
             alimentacion = get_events("alimentacion", unique_id)
             muda = get_events("muda", unique_id)
@@ -584,33 +616,82 @@ if menu == "📊 Panel de Control":
 
             st.divider()
 
-            # ---- Recomendaciones personalizadas ----
+            # ---- Recomendaciones personalizadas (con tabla comparativa) ----
             st.subheader("🧠 Recomendaciones personalizadas")
             with st.container():
                 col_rec1, col_rec2 = st.columns([2, 1])
                 with col_rec1:
                     # Alimentación dinámica
-                    if alimentacion and len(alimentacion) > 0:
-                        last_feed_date_str = alimentacion[0].get('fecha')
-                        try:
-                            last_feed_date = datetime.strptime(last_feed_date_str[:10], "%Y-%m-%d")
-                            days_since = (datetime.now() - last_feed_date).days
-                            if days_since > feed_interval:
-                                st.error(f"⚠️ **Alerta**: Han pasado **{days_since} días** desde la última alimentación. Debería comer cada {feed_interval} días.")
-                            else:
-                                st.success(f"✅ Última alimentación hace {days_since} días. Intervalo sugerido: cada {feed_interval} días.")
-                            # Mostrar presa sugerida con peso
-                            if prey_weight != "N/A":
-                                st.info(f"🍗 **Presa sugerida**: {prey_suggested} (peso aprox. {prey_weight})")
-                            else:
-                                st.info(f"🍗 **Presa sugerida**: {prey_suggested}")
-                        except:
-                            st.info("ℹ️ No se pudo calcular la fecha exacta.")
+                    if species_name in ["Python regius", "Piton Bola"] and current_weight > 0:
+                        rec = calcular_recomendacion_presa(current_weight)
+                        st.success(f"📊 **Etapa:** {rec['etapa']}")
+                        st.info(f"🍗 **Presa recomendada:** {rec['rango_presa']} (aprox. {rec['porcentaje_min']} - {rec['porcentaje_max']} del peso corporal)")
+                        st.info(f"📅 **Frecuencia:** {rec['frecuencia']}")
+                        
+                        # Mostrar tabla comparativa
+                        with st.expander("📖 Tabla comparativa de referencia (pitones bola)", expanded=True):
+                            tabla_html = """
+                            <div class="tabla-referencia">
+                                <table style="width:100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr>
+                                            <th>Etapa</th>
+                                            <th>Peso de la serpiente</th>
+                                            <th>% del peso corporal</th>
+                                            <th>Frecuencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>🟢 Juvenil</td>
+                                            <td>&lt; 500g</td>
+                                            <td>10% - 15%</td>
+                                            <td>cada 5-7 días</td>
+                                        </tr>
+                                        <tr>
+                                            <td>🟡 Sub-adulto</td>
+                                            <td>500g - 1000g</td>
+                                            <td>7% - 10%</td>
+                                            <td>cada 7-10 días</td>
+                                        </tr>
+                                        <tr>
+                                            <td>🔴 Adulto</td>
+                                            <td>&gt; 1000g</td>
+                                            <td>5% - 7%</td>
+                                            <td>cada 10-14 días</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p style="font-size:0.8rem; color:#b0bec5; margin-top:0.5rem;">
+                                    💡 <strong>Nota:</strong> Estos valores son orientativos. Ajusta según la condición corporal de tu ejemplar.
+                                </p>
+                            </div>
+                            """
+                            st.markdown(tabla_html, unsafe_allow_html=True)
+                        
+                        # Comparar con la última alimentación si existe
+                        if alimentacion and len(alimentacion) > 0:
+                            last_feed_date_str = alimentacion[0].get('fecha')
+                            try:
+                                last_feed_date = datetime.strptime(last_feed_date_str[:10], "%Y-%m-%d")
+                                days_since = (datetime.now() - last_feed_date).days
+                                # Extraer número de días de la frecuencia (ej: "cada 5-7 días" -> 5)
+                                import re
+                                freq_days = re.findall(r'\d+', rec['frecuencia'])
+                                if freq_days:
+                                    min_days = int(freq_days[0])
+                                    max_days = int(freq_days[1]) if len(freq_days) > 1 else min_days
+                                    if days_since > max_days:
+                                        st.error(f"⚠️ **Alerta**: Han pasado **{days_since} días** desde la última alimentación. Debería comer {rec['frecuencia']}.")
+                                    else:
+                                        st.success(f"✅ Última alimentación hace {days_since} días. Intervalo recomendado: {rec['frecuencia']}.")
+                            except:
+                                pass
+                    elif current_weight <= 0:
+                        st.warning("⚠️ **Registra el peso del ejemplar** para obtener una recomendación precisa de alimentación.")
                     else:
-                        if prey_weight != "N/A":
-                            st.info(f"ℹ️ Para esta especie y peso, se recomienda alimentar cada **{feed_interval} días** con **{prey_suggested}** (peso aprox. {prey_weight}).")
-                        else:
-                            st.info(f"ℹ️ Para esta especie y peso, se recomienda alimentar cada **{feed_interval} días** con **{prey_suggested}**.")
+                        # Para otras especies, mostrar datos generales
+                        st.info(f"ℹ️ Para {species_name}, consulta guías específicas de alimentación.")
 
                     # Muda
                     shed_interval = species_info.get("shed_interval", 30)
