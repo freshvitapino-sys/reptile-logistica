@@ -6,6 +6,8 @@ import random
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
+import requests
+import re
 
 # ---------- CONFIGURACIÓN DE PÁGINA ----------
 st.set_page_config(
@@ -212,12 +214,47 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- RECOMENDACIÓN DE ALIMENTACIÓN CON PORCENTAJES DINÁMICOS ----------
+# ---------- FUNCIÓN PARA RECUPERAR TOKEN DE VOICE MONKEY ----------
+def obtener_token_voice_monkey(owner_name):
+    """Recupera el token de Voice Monkey desde Supabase."""
+    try:
+        res = supabase.table("usuarios_tokens").select("token_voice_monkey").eq("owner_name", owner_name).execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0]['token_voice_monkey']
+        else:
+            return None
+    except Exception as e:
+        print(f"Error al obtener token: {e}")
+        return None
+
+# ---------- FUNCIÓN PARA ENVIAR NOTIFICACIÓN A VOICE MONKEY ----------
+def enviar_notificacion_alexa(mensaje, owner_name):
+    """
+    Envía una notificación de voz a Alexa usando Voice Monkey.
+    Retorna (éxito, mensaje).
+    """
+    token = obtener_token_voice_monkey(owner_name)
+    if not token:
+        return False, "No tienes token de Voice Monkey configurado. Ve a Configuración para agregarlo."
+    
+    url = "https://api-v2.voicemonkey.io/announcement"
+    payload = {
+        "token": token,
+        "text": mensaje
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=10)
+        if response.status_code == 200:
+            return True, "📢 Notificación enviada a tu Alexa"
+        else:
+            return False, f"Error: {response.status_code} - {response.text}"
+    except Exception as e:
+        return False, f"Error de conexión: {e}"
+
+# ---------- RECOMENDACIÓN DE ALIMENTACIÓN ----------
 def calcular_recomendacion_presa(peso_serpiente):
-    """
-    Calcula el rango de peso de la presa y la frecuencia según el peso de la pitón bola.
-    Basado en la regla del porcentaje del peso corporal.
-    """
+    """Calcula el rango de peso de la presa y la frecuencia según el peso."""
     if peso_serpiente is None or peso_serpiente <= 0:
         return {
             "rango_presa": "No disponible",
@@ -410,7 +447,6 @@ def classify_food(food_text):
 
 # ---------- FUNCIONES AUXILIARES ----------
 def get_species_info(species_name, weight=None):
-    """Devuelve la información de la especie, añadiendo recomendación de presa si es pitón bola."""
     base = SPECIES_DB.get(species_name, DEFAULT_SPECIES)
     if weight is not None and weight > 0 and species_name in ["Python regius", "Piton Bola"]:
         rec = calcular_recomendacion_presa(weight)
@@ -441,32 +477,18 @@ def safe_int(value, default=0):
     except (ValueError, TypeError):
         return default
 
-def calcular_edad(fecha_nacimiento):
-    """Calcula la edad en años, meses y días a partir de una fecha de nacimiento."""
-    if fecha_nacimiento is None:
+def estimate_age(current_weight, species_info):
+    birth_weight = species_info.get("birth_weight", 20)
+    adult_weight = species_info.get("adult_weight", 1000)
+    months_to_adult = species_info.get("months_to_adult", 24)
+    if adult_weight <= birth_weight:
         return None
-    try:
-        if isinstance(fecha_nacimiento, str):
-            fecha_nac = datetime.strptime(fecha_nacimiento[:10], "%Y-%m-%d").date()
-        else:
-            fecha_nac = fecha_nacimiento
-        hoy = datetime.now().date()
-        if fecha_nac > hoy:
-            return None
-        años = hoy.year - fecha_nac.year
-        meses = hoy.month - fecha_nac.month
-        dias = hoy.day - fecha_nac.day
-        if dias < 0:
-            meses -= 1
-            # Ajustar días
-            ultimo_dia_mes_anterior = (hoy.replace(day=1) - timedelta(days=1)).day
-            dias += ultimo_dia_mes_anterior
-        if meses < 0:
-            años -= 1
-            meses += 12
-        return f"{años} años, {meses} meses, {dias} días" if años > 0 else f"{meses} meses, {dias} días"
-    except:
-        return None
+    if current_weight <= birth_weight:
+        return 0
+    if current_weight >= adult_weight:
+        return months_to_adult
+    proportion = (current_weight - birth_weight) / (adult_weight - birth_weight)
+    return round(proportion * months_to_adult, 1)
 
 # ---------- AUTENTICACIÓN ----------
 if "authenticated" not in st.session_state:
@@ -506,7 +528,7 @@ with st.sidebar:
     st.divider()
     menu = st.radio(
         "📌 Módulos",
-        ["📊 Panel de Control", "➕ Nuevo Ejemplar", "🍽️ Alimentación", "🔄 Muda", "⚖️ Registro de Peso", "🏥 Veterinario", "📈 Estadísticas Globales"],
+        ["📊 Panel de Control", "➕ Nuevo Ejemplar", "🍽️ Alimentación", "🔄 Muda", "⚖️ Registro de Peso", "🏥 Veterinario", "⚙️ Configuración", "📈 Estadísticas Globales"],
         index=0
     )
     st.divider()
@@ -548,11 +570,13 @@ def mostrar_botones_ejemplares(reptiles):
         return None
     
     cols = st.columns(2)
+    selected_id = None
+    
     for idx, r in enumerate(reptiles):
         col = cols[idx % 2]
         label = f"{r.get('name', 'Sin nombre')}\n({r.get('species', 'N/A')})"
         is_selected = (st.session_state.get('selected_reptile') == r['unique_id'])
-        btn_class = "ejemplar-btn-seleccionado" if is_selected else "ejemplar-btn"
+        
         if col.button(label, key=f"btn_{r['unique_id']}", use_container_width=True):
             st.session_state.selected_reptile = r['unique_id']
             st.rerun()
@@ -623,16 +647,6 @@ if menu == "📊 Panel de Control":
                 st.write(f"**⚥ Sexo:** {item.get('sex', 'N/A')}")
                 st.write(f"**📄 Pedimento:** {item.get('pedimento', 'N/A')}")
                 st.write(f"**📝 Notas:** {item.get('notas', 'N/A')}")
-                # Edad calculada desde fecha_nacimiento
-                fecha_nac = item.get('fecha_nacimiento')
-                if fecha_nac:
-                    edad_texto = calcular_edad(fecha_nac)
-                    if edad_texto:
-                        st.write(f"**🎂 Edad:** {edad_texto}")
-                    else:
-                        st.write("**🎂 Edad:** No disponible")
-                else:
-                    st.write("**🎂 Edad:** No registrada")
 
             st.divider()
 
@@ -648,6 +662,7 @@ if menu == "📊 Panel de Control":
                         st.info(f"🍗 **Presa recomendada:** {rec['rango_presa']} (aprox. {rec['porcentaje_min']} - {rec['porcentaje_max']} del peso corporal)")
                         st.info(f"📅 **Frecuencia:** {rec['frecuencia']}")
                         
+                        # Mostrar tabla comparativa
                         with st.expander("📖 Tabla comparativa de referencia (pitones bola)", expanded=True):
                             tabla_html = """
                             <div class="tabla-referencia">
@@ -688,18 +703,29 @@ if menu == "📊 Panel de Control":
                             """
                             st.markdown(tabla_html, unsafe_allow_html=True)
                         
+                        # Comparar con la última alimentación
                         if alimentacion and len(alimentacion) > 0:
                             last_feed_date_str = alimentacion[0].get('fecha')
                             try:
                                 last_feed_date = datetime.strptime(last_feed_date_str[:10], "%Y-%m-%d")
                                 days_since = (datetime.now() - last_feed_date).days
-                                import re
                                 freq_days = re.findall(r'\d+', rec['frecuencia'])
                                 if freq_days:
                                     min_days = int(freq_days[0])
                                     max_days = int(freq_days[1]) if len(freq_days) > 1 else min_days
                                     if days_since > max_days:
                                         st.error(f"⚠️ **Alerta**: Han pasado **{days_since} días** desde la última alimentación. Debería comer {rec['frecuencia']}.")
+                                        # --- ENVIAR NOTIFICACIÓN A ALEXA ---
+                                        nombre_ejemplar = item.get('name', 'Ejemplar sin nombre')
+                                        with st.spinner("Enviando notificación a Alexa..."):
+                                            exito, mensaje_alexa = enviar_notificacion_alexa(
+                                                f"Alerta de alimentación: {nombre_ejemplar} lleva {days_since} días sin comer. Intervalo recomendado: {rec['frecuencia']}.",
+                                                st.session_state.username
+                                            )
+                                            if exito:
+                                                st.success("📢 Notificación enviada a tu Alexa")
+                                            else:
+                                                st.info(f"ℹ️ {mensaje_alexa}")
                                     else:
                                         st.success(f"✅ Última alimentación hace {days_since} días. Intervalo recomendado: {rec['frecuencia']}.")
                             except:
@@ -859,7 +885,7 @@ if menu == "📊 Panel de Control":
                 else:
                     st.info("Sin registros veterinarios.")
 
-# ---- NUEVO EJEMPLAR (con fecha de nacimiento) ----
+# ---- NUEVO EJEMPLAR ----
 elif menu == "➕ Nuevo Ejemplar":
     st.header("➕ Registrar nuevo ejemplar")
     with st.form("new_reptile", clear_on_submit=True):
@@ -872,7 +898,6 @@ elif menu == "➕ Nuevo Ejemplar":
         with col2:
             pedimento = st.text_input("📄 Pedimento (opcional)")
             peso = st.number_input("⚖️ Peso (g)", min_value=0, step=50)
-            fecha_nacimiento = st.date_input("🎂 Fecha de nacimiento (opcional)", value=None, min_value=datetime(2020,1,1).date(), max_value=datetime.now().date())
         notas = st.text_area("📝 Notas adicionales")
         
         submitted = st.form_submit_button("💾 Guardar ejemplar", use_container_width=True)
@@ -890,8 +915,7 @@ elif menu == "➕ Nuevo Ejemplar":
                     "pedimento": pedimento,
                     "peso": int(peso),
                     "notas": notas,
-                    "fase": fase,
-                    "fecha_nacimiento": str(fecha_nacimiento) if fecha_nacimiento else None
+                    "fase": fase
                 }
                 try:
                     supabase.table("reptiles").insert(data).execute()
@@ -1055,6 +1079,82 @@ elif menu == "🏥 Veterinario":
                         st.cache_data.clear()
                     except Exception as e:
                         st.error(f"❌ Error: {e}")
+
+# ---- CONFIGURACIÓN (TOKEN DE VOICE MONKEY) ----
+elif menu == "⚙️ Configuración":
+    st.header("⚙️ Configuración de notificaciones")
+    
+    # Verificar si el usuario ya tiene token guardado
+    token_actual = obtener_token_voice_monkey(st.session_state.username)
+    if token_actual:
+        st.success("✅ Tienes un token de Voice Monkey configurado.")
+        st.info(f"Token actual: `{token_actual[:8]}...{token_actual[-4:]}` (oculto por seguridad)")
+    else:
+        st.warning("⚠️ Aún no has configurado tu token de Voice Monkey.")
+    
+    with st.form("token_form"):
+        st.markdown("""
+        ### 📢 Notificaciones por Alexa
+        
+        Para recibir notificaciones en tu dispositivo Alexa, necesitas un token de **Voice Monkey**.
+        
+        1. Ve a [Voice Monkey](https://voicemonkey.io) y regístrate.
+        2. Vincula tu cuenta de Amazon (habilita la skill de Voice Monkey).
+        3. Ve a **Settings → API Credentials** y copia tu **"Secret Token"**.
+        4. Pega el token en el campo de abajo y guarda.
+        """)
+        
+        token_input = st.text_input("🔑 Token de Voice Monkey", type="password", placeholder="Ej: abc123def456...")
+        
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            submitted = st.form_submit_button("💾 Guardar token", use_container_width=True)
+        with col_btn2:
+            if token_actual:
+                delete_btn = st.form_submit_button("🗑️ Eliminar token", use_container_width=True)
+        
+        if submitted:
+            if token_input.strip():
+                # Guardar en Supabase
+                data = {
+                    "owner_name": st.session_state.username,
+                    "token_voice_monkey": token_input.strip()
+                }
+                try:
+                    supabase.table("usuarios_tokens").upsert(data, on_conflict="owner_name").execute()
+                    st.success("✅ Token guardado correctamente. Ahora recibirás notificaciones en tu Alexa cuando haya alertas.")
+                    st.cache_data.clear()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error al guardar token: {e}")
+            else:
+                st.error("El token no puede estar vacío.")
+        
+        if token_actual and 'delete_btn' in locals() and delete_btn:
+            try:
+                supabase.table("usuarios_tokens").delete().eq("owner_name", st.session_state.username).execute()
+                st.success("🗑️ Token eliminado correctamente. Ya no recibirás notificaciones.")
+                st.cache_data.clear()
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Error al eliminar token: {e}")
+    
+    # --- Probar notificación ---
+    st.divider()
+    st.subheader("🧪 Probar notificación")
+    with st.form("test_notification"):
+        mensaje_test = st.text_input("Mensaje de prueba", value="¡Hola! Esta es una notificación de prueba desde RIARE Exotic's.")
+        submitted_test = st.form_submit_button("🔊 Enviar prueba a Alexa")
+        if submitted_test:
+            if token_actual:
+                with st.spinner("Enviando notificación de prueba..."):
+                    exito, mensaje = enviar_notificacion_alexa(mensaje_test, st.session_state.username)
+                    if exito:
+                        st.success("✅ ¡Notificación enviada! Deberías escucharla en tu Alexa en unos segundos.")
+                    else:
+                        st.error(f"❌ Error: {mensaje}")
+            else:
+                st.warning("⚠️ Primero debes configurar tu token de Voice Monkey para probar.")
 
 # ---- ESTADÍSTICAS GLOBALES ----
 elif menu == "📈 Estadísticas Globales":
