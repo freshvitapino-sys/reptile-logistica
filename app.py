@@ -195,32 +195,36 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO (con alimentación dinámica) ----------
-# Nueva función para recomendación de alimentación según peso
+# ---------- RECOMENDACIÓN DE ALIMENTACIÓN CON PESO DE PRESA ----------
 def get_feed_recommendation(weight, species):
     """
-    Retorna (intervalo_dias, presa_sugerida) según el peso y la especie.
-    Por ahora solo para Python regius / Piton Bola.
+    Retorna (intervalo_dias, nombre_presa, peso_presa_aprox)
+    según el peso de la serpiente y la especie.
+    Para pitones bola (Python regius, Piton Bola).
     """
     if species not in ["Python regius", "Piton Bola"]:
-        # Para otras especies, usar el valor por defecto
-        return 7, "Roedor"
+        # Para otras especies, usar valor por defecto sin peso de presa
+        return 7, "Roedor", "N/A"
     
-    # Rangos típicos para pitones bola (basado en peso)
+    # Si no hay peso registrado, solo devolver nombre de presa sin peso
+    if weight is None or weight <= 0:
+        return 7, "Roedor (peso no registrado)", "N/A"
+    
+    # Rangos típicos para pitones bola (peso de la serpiente -> presa)
     if weight < 150:  # Cría
-        return 5, "Pinky (ratón recién nacido)"
+        return 5, "Pinky", "3-6g"
     elif weight < 300:  # Juvenil pequeño
-        return 6, "Fuzzy (ratón con pelo)"
+        return 6, "Fuzzy", "7-12g"
     elif weight < 600:  # Juvenil mediano
-        return 7, "Ratón pequeño / Rata weanling"
+        return 7, "Ratón pequeño", "13-20g"
     elif weight < 1000:  # Sub-adulto
-        return 10, "Rata pequeña"
+        return 10, "Rata weanling", "20-30g"
     elif weight < 1500:  # Adulto joven
-        return 12, "Rata mediana"
+        return 12, "Rata pequeña", "30-50g"
     else:  # Adulto grande
-        return 14, "Rata grande / Conejo pequeño"
+        return 14, "Rata mediana", "50-80g"
 
-# Diccionario base (se mantiene para otros datos)
+# ---------- BASE DE CONOCIMIENTO ----------
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -237,7 +241,7 @@ SPECIES_DB = {
         "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Conejo"]
     },
     "Python regius": {
-        "feed_interval": 7,  # valor por defecto, se sobreescribe con get_feed_recommendation
+        "feed_interval": 7,
         "temp_range": (24, 30),
         "humidity": 55,
         "adult_weight": 2000,
@@ -293,7 +297,7 @@ SPECIES_DB = {
         "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Codorniz"]
     },
     "Piton Bola": {
-        "feed_interval": 7,  # se sobreescribe
+        "feed_interval": 7,
         "temp_range": (24, 30),
         "humidity": 55,
         "adult_weight": 2000,
@@ -380,10 +384,11 @@ def get_species_info(species_name, weight=None):
     """Devuelve la información de la especie, actualizando feed_interval si se proporciona peso y es pitón bola."""
     base = SPECIES_DB.get(species_name, DEFAULT_SPECIES)
     if weight is not None and species_name in ["Python regius", "Piton Bola"]:
-        interval, prey = get_feed_recommendation(weight, species_name)
+        interval, prey, prey_weight = get_feed_recommendation(weight, species_name)
         base = base.copy()
         base['feed_interval'] = interval
         base['presa_sugerida'] = prey
+        base['peso_presa'] = prey_weight
     return base
 
 def safe_days_between(date_str):
@@ -462,7 +467,7 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.session_state.selected_reptile = None
         st.rerun()
-    st.caption("🐍 RIARE Exotic's v3.1")
+    st.caption("🐍 RIARE Exotic's v3.2")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -502,7 +507,6 @@ def mostrar_botones_ejemplares(reptiles):
         col = cols[idx % 2]
         label = f"{r.get('name', 'Sin nombre')}\n({r.get('species', 'N/A')})"
         is_selected = (st.session_state.get('selected_reptile') == r['unique_id'])
-        btn_style = "ejemplar-btn-seleccionado" if is_selected else "ejemplar-btn"
         
         if col.button(label, key=f"btn_{r['unique_id']}", use_container_width=True):
             st.session_state.selected_reptile = r['unique_id']
@@ -533,9 +537,10 @@ if menu == "📊 Panel de Control":
             unique_id = item['unique_id']
             species_name = item.get('species', '')
             current_weight = safe_int(item.get('peso'))
-            species_info = get_species_info(species_name, current_weight)  # Pasar peso para obtener intervalo dinámico
+            species_info = get_species_info(species_name, current_weight)
             feed_interval = species_info.get("feed_interval", 7)
             prey_suggested = species_info.get("presa_sugerida", "Roedor")
+            prey_weight = species_info.get("peso_presa", "N/A")
 
             alimentacion = get_events("alimentacion", unique_id)
             muda = get_events("muda", unique_id)
@@ -579,7 +584,7 @@ if menu == "📊 Panel de Control":
 
             st.divider()
 
-            # ---- Recomendaciones personalizadas (con alimentación dinámica) ----
+            # ---- Recomendaciones personalizadas ----
             st.subheader("🧠 Recomendaciones personalizadas")
             with st.container():
                 col_rec1, col_rec2 = st.columns([2, 1])
@@ -594,11 +599,18 @@ if menu == "📊 Panel de Control":
                                 st.error(f"⚠️ **Alerta**: Han pasado **{days_since} días** desde la última alimentación. Debería comer cada {feed_interval} días.")
                             else:
                                 st.success(f"✅ Última alimentación hace {days_since} días. Intervalo sugerido: cada {feed_interval} días.")
-                            st.info(f"🍗 **Presa sugerida**: {prey_suggested}")
+                            # Mostrar presa sugerida con peso
+                            if prey_weight != "N/A":
+                                st.info(f"🍗 **Presa sugerida**: {prey_suggested} (peso aprox. {prey_weight})")
+                            else:
+                                st.info(f"🍗 **Presa sugerida**: {prey_suggested}")
                         except:
                             st.info("ℹ️ No se pudo calcular la fecha exacta.")
                     else:
-                        st.info(f"ℹ️ Para esta especie y peso, se recomienda alimentar cada **{feed_interval} días** con **{prey_suggested}**.")
+                        if prey_weight != "N/A":
+                            st.info(f"ℹ️ Para esta especie y peso, se recomienda alimentar cada **{feed_interval} días** con **{prey_suggested}** (peso aprox. {prey_weight}).")
+                        else:
+                            st.info(f"ℹ️ Para esta especie y peso, se recomienda alimentar cada **{feed_interval} días** con **{prey_suggested}**.")
 
                     # Muda
                     shed_interval = species_info.get("shed_interval", 30)
