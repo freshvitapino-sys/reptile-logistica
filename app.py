@@ -184,6 +184,17 @@ st.markdown("""
         color: #4caf50;
         font-weight: bold;
     }
+    .config-section {
+        background-color: #1e2229;
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #2a2f39;
+    }
+    .config-section h4 {
+        color: #4caf50;
+        margin-top: 0;
+    }
     @media (max-width: 768px) {
         .stColumns { flex-direction: column !important; }
         .stColumns > div { width: 100% !important; margin-bottom: 1rem; }
@@ -214,26 +225,53 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- FUNCIÓN PARA RECUPERAR TOKEN DE VOICE MONKEY ----------
-def obtener_token_voice_monkey(owner_name):
-    """Recupera el token de Voice Monkey desde Supabase."""
+# ---------- FUNCIONES PARA OBTENER CONFIGURACIÓN DE USUARIO ----------
+def obtener_config_usuario(owner_name):
+    """Recupera token de Voice Monkey y webhook de HA desde Supabase."""
     try:
-        res = supabase.table("usuarios_tokens").select("token_voice_monkey").eq("owner_name", owner_name).execute()
+        res = supabase.table("usuarios_tokens").select("token_voice_monkey, webhook_ha").eq("owner_name", owner_name).execute()
         if res.data and len(res.data) > 0:
-            return res.data[0]['token_voice_monkey']
+            return res.data[0]
         else:
-            return None
+            return {"token_voice_monkey": None, "webhook_ha": None}
     except Exception as e:
-        print(f"Error al obtener token: {e}")
-        return None
+        print(f"Error al obtener configuración: {e}")
+        return {"token_voice_monkey": None, "webhook_ha": None}
 
-# ---------- FUNCIÓN PARA ENVIAR NOTIFICACIÓN A VOICE MONKEY ----------
+def guardar_config_usuario(owner_name, token_voice_monkey=None, webhook_ha=None):
+    """Guarda o actualiza la configuración del usuario."""
+    data = {"owner_name": owner_name}
+    if token_voice_monkey is not None:
+        data["token_voice_monkey"] = token_voice_monkey
+    if webhook_ha is not None:
+        data["webhook_ha"] = webhook_ha
+    try:
+        supabase.table("usuarios_tokens").upsert(data, on_conflict="owner_name").execute()
+        return True
+    except Exception as e:
+        print(f"Error al guardar configuración: {e}")
+        return False
+
+def eliminar_config_usuario(owner_name, campo):
+    """Elimina un campo específico de la configuración (token o webhook)."""
+    try:
+        if campo == "token":
+            supabase.table("usuarios_tokens").update({"token_voice_monkey": None}).eq("owner_name", owner_name).execute()
+        elif campo == "webhook":
+            supabase.table("usuarios_tokens").update({"webhook_ha": None}).eq("owner_name", owner_name).execute()
+        return True
+    except Exception as e:
+        print(f"Error al eliminar {campo}: {e}")
+        return False
+
+# ---------- FUNCIONES PARA ENVIAR NOTIFICACIONES ----------
 def enviar_notificacion_alexa(mensaje, owner_name):
     """
     Envía una notificación de voz a Alexa usando Voice Monkey.
     Retorna (éxito, mensaje).
     """
-    token = obtener_token_voice_monkey(owner_name)
+    config = obtener_config_usuario(owner_name)
+    token = config.get("token_voice_monkey")
     if not token:
         return False, "No tienes token de Voice Monkey configurado. Ve a Configuración para agregarlo."
     
@@ -251,6 +289,60 @@ def enviar_notificacion_alexa(mensaje, owner_name):
             return False, f"Error: {response.status_code} - {response.text}"
     except Exception as e:
         return False, f"Error de conexión: {e}"
+
+def enviar_notificacion_ha(mensaje, owner_name, titulo="RIARE Exotic's"):
+    """
+    Envía una notificación a Home Assistant vía webhook.
+    Retorna (éxito, mensaje).
+    """
+    config = obtener_config_usuario(owner_name)
+    webhook_url = config.get("webhook_ha")
+    if not webhook_url:
+        return False, "No tienes webhook de Home Assistant configurado. Ve a Configuración para agregarlo."
+    
+    payload = {
+        "message": mensaje,
+        "title": titulo
+    }
+    
+    try:
+        response = requests.post(webhook_url, json=payload, timeout=10)
+        if response.status_code == 200:
+            return True, "🏠 Notificación enviada a Home Assistant"
+        else:
+            return False, f"Error: {response.status_code} - {response.text}"
+    except Exception as e:
+        return False, f"Error de conexión: {e}"
+
+def enviar_notificaciones_dual(mensaje, owner_name, titulo="RIARE Exotic's"):
+    """
+    Envía notificación a Alexa y/o Home Assistant según lo configurado.
+    Retorna diccionario con resultados.
+    """
+    resultados = {
+        "alexa": {"enviado": False, "mensaje": ""},
+        "ha": {"enviado": False, "mensaje": ""}
+    }
+    
+    config = obtener_config_usuario(owner_name)
+    
+    # Voice Monkey (Alexa)
+    if config.get("token_voice_monkey"):
+        exito, msg = enviar_notificacion_alexa(mensaje, owner_name)
+        resultados["alexa"]["enviado"] = exito
+        resultados["alexa"]["mensaje"] = msg
+    else:
+        resultados["alexa"]["mensaje"] = "Token de Voice Monkey no configurado"
+    
+    # Home Assistant
+    if config.get("webhook_ha"):
+        exito, msg = enviar_notificacion_ha(mensaje, owner_name, titulo)
+        resultados["ha"]["enviado"] = exito
+        resultados["ha"]["mensaje"] = msg
+    else:
+        resultados["ha"]["mensaje"] = "Webhook de Home Assistant no configurado"
+    
+    return resultados
 
 # ---------- RECOMENDACIÓN DE ALIMENTACIÓN ----------
 def calcular_recomendacion_presa(peso_serpiente):
@@ -477,19 +569,6 @@ def safe_int(value, default=0):
     except (ValueError, TypeError):
         return default
 
-def estimate_age(current_weight, species_info):
-    birth_weight = species_info.get("birth_weight", 20)
-    adult_weight = species_info.get("adult_weight", 1000)
-    months_to_adult = species_info.get("months_to_adult", 24)
-    if adult_weight <= birth_weight:
-        return None
-    if current_weight <= birth_weight:
-        return 0
-    if current_weight >= adult_weight:
-        return months_to_adult
-    proportion = (current_weight - birth_weight) / (adult_weight - birth_weight)
-    return round(proportion * months_to_adult, 1)
-
 # ---------- AUTENTICACIÓN ----------
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -536,7 +615,7 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.session_state.selected_reptile = None
         st.rerun()
-    st.caption("🐍 RIARE Exotic's v3.4")
+    st.caption("🐍 RIARE Exotic's v3.5")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -703,7 +782,7 @@ if menu == "📊 Panel de Control":
                             """
                             st.markdown(tabla_html, unsafe_allow_html=True)
                         
-                        # Comparar con la última alimentación
+                        # Comparar con la última alimentación y enviar notificaciones
                         if alimentacion and len(alimentacion) > 0:
                             last_feed_date_str = alimentacion[0].get('fecha')
                             try:
@@ -715,17 +794,24 @@ if menu == "📊 Panel de Control":
                                     max_days = int(freq_days[1]) if len(freq_days) > 1 else min_days
                                     if days_since > max_days:
                                         st.error(f"⚠️ **Alerta**: Han pasado **{days_since} días** desde la última alimentación. Debería comer {rec['frecuencia']}.")
-                                        # --- ENVIAR NOTIFICACIÓN A ALEXA ---
+                                        
+                                        # --- ENVIAR NOTIFICACIONES DUALES ---
                                         nombre_ejemplar = item.get('name', 'Ejemplar sin nombre')
-                                        with st.spinner("Enviando notificación a Alexa..."):
-                                            exito, mensaje_alexa = enviar_notificacion_alexa(
-                                                f"Alerta de alimentación: {nombre_ejemplar} lleva {days_since} días sin comer. Intervalo recomendado: {rec['frecuencia']}.",
-                                                st.session_state.username
-                                            )
-                                            if exito:
-                                                st.success("📢 Notificación enviada a tu Alexa")
-                                            else:
-                                                st.info(f"ℹ️ {mensaje_alexa}")
+                                        mensaje_alerta = f"Alerta de alimentación: {nombre_ejemplar} lleva {days_since} días sin comer. Intervalo recomendado: {rec['frecuencia']}."
+                                        with st.spinner("Enviando notificaciones..."):
+                                            resultados = enviar_notificaciones_dual(mensaje_alerta, st.session_state.username, "RIARE Alerta")
+                                            # Mostrar resultados
+                                            if resultados["alexa"]["enviado"]:
+                                                st.success(resultados["alexa"]["mensaje"])
+                                            elif resultados["alexa"]["mensaje"] and "no configurado" not in resultados["alexa"]["mensaje"]:
+                                                st.warning(f"Alexa: {resultados['alexa']['mensaje']}")
+                                            if resultados["ha"]["enviado"]:
+                                                st.success(resultados["ha"]["mensaje"])
+                                            elif resultados["ha"]["mensaje"] and "no configurado" not in resultados["ha"]["mensaje"]:
+                                                st.warning(f"HA: {resultados['ha']['mensaje']}")
+                                            # Si ningún sistema está configurado, mostrar mensaje
+                                            if not resultados["alexa"]["enviado"] and not resultados["ha"]["enviado"]:
+                                                st.info("ℹ️ No tienes ningún sistema de notificaciones configurado. Ve a Configuración para agregar token de Voice Monkey o webhook de Home Assistant.")
                                     else:
                                         st.success(f"✅ Última alimentación hace {days_since} días. Intervalo recomendado: {rec['frecuencia']}.")
                             except:
@@ -1080,81 +1166,135 @@ elif menu == "🏥 Veterinario":
                     except Exception as e:
                         st.error(f"❌ Error: {e}")
 
-# ---- CONFIGURACIÓN (TOKEN DE VOICE MONKEY) ----
+# ---- CONFIGURACIÓN (TOKEN DE VOICE MONKEY + WEBHOOK HA) ----
 elif menu == "⚙️ Configuración":
     st.header("⚙️ Configuración de notificaciones")
     
-    # Verificar si el usuario ya tiene token guardado
-    token_actual = obtener_token_voice_monkey(st.session_state.username)
-    if token_actual:
-        st.success("✅ Tienes un token de Voice Monkey configurado.")
-        st.info(f"Token actual: `{token_actual[:8]}...{token_actual[-4:]}` (oculto por seguridad)")
-    else:
-        st.warning("⚠️ Aún no has configurado tu token de Voice Monkey.")
+    config = obtener_config_usuario(st.session_state.username)
+    token_actual = config.get("token_voice_monkey")
+    webhook_actual = config.get("webhook_ha")
     
-    with st.form("token_form"):
-        st.markdown("""
-        ### 📢 Notificaciones por Alexa
-        
-        Para recibir notificaciones en tu dispositivo Alexa, necesitas un token de **Voice Monkey**.
-        
-        1. Ve a [Voice Monkey](https://voicemonkey.io) y regístrate.
-        2. Vincula tu cuenta de Amazon (habilita la skill de Voice Monkey).
-        3. Ve a **Settings → API Credentials** y copia tu **"Secret Token"**.
-        4. Pega el token en el campo de abajo y guarda.
-        """)
-        
-        token_input = st.text_input("🔑 Token de Voice Monkey", type="password", placeholder="Ej: abc123def456...")
-        
-        col_btn1, col_btn2 = st.columns(2)
-        with col_btn1:
-            submitted = st.form_submit_button("💾 Guardar token", use_container_width=True)
-        with col_btn2:
-            if token_actual:
-                delete_btn = st.form_submit_button("🗑️ Eliminar token", use_container_width=True)
-        
-        if submitted:
-            if token_input.strip():
-                # Guardar en Supabase
-                data = {
-                    "owner_name": st.session_state.username,
-                    "token_voice_monkey": token_input.strip()
-                }
-                try:
-                    supabase.table("usuarios_tokens").upsert(data, on_conflict="owner_name").execute()
-                    st.success("✅ Token guardado correctamente. Ahora recibirás notificaciones en tu Alexa cuando haya alertas.")
+    # ---- SECCIÓN VOICE MONKEY (Alexa) ----
+    st.markdown("""
+    <div class="config-section">
+        <h4>🔊 Alexa (Voice Monkey)</h4>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if token_actual:
+        st.success("✅ Token de Voice Monkey configurado")
+        st.info(f"Token actual: `{token_actual[:8]}...{token_actual[-4:]}` (oculto)")
+    else:
+        st.warning("⚠️ Token de Voice Monkey no configurado")
+    
+    col_vm1, col_vm2 = st.columns([3, 1])
+    with col_vm1:
+        with st.form("token_form"):
+            st.markdown("""
+            **📢 Notificaciones por Alexa**
+            
+            1. Ve a [Voice Monkey](https://voicemonkey.io) y regístrate.
+            2. Vincula tu cuenta de Amazon (habilita la skill de Voice Monkey).
+            3. Ve a **Settings → API Credentials** y copia tu **"Secret Token"**.
+            """)
+            token_input = st.text_input("🔑 Token de Voice Monkey", type="password", placeholder="Ej: abc123def456...")
+            submitted_token = st.form_submit_button("💾 Guardar token", use_container_width=True)
+            
+            if submitted_token:
+                if token_input.strip():
+                    if guardar_config_usuario(st.session_state.username, token_voice_monkey=token_input.strip()):
+                        st.success("✅ Token guardado correctamente. ¡Ya recibirás notificaciones en tu Alexa!")
+                        st.cache_data.clear()
+                        st.rerun()
+                    else:
+                        st.error("❌ Error al guardar token.")
+                else:
+                    st.error("El token no puede estar vacío.")
+    
+    with col_vm2:
+        if token_actual:
+            if st.button("🗑️ Eliminar token", key="del_token", use_container_width=True):
+                if eliminar_config_usuario(st.session_state.username, "token"):
+                    st.success("🗑️ Token eliminado.")
                     st.cache_data.clear()
                     st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error al guardar token: {e}")
-            else:
-                st.error("El token no puede estar vacío.")
-        
-        if token_actual and 'delete_btn' in locals() and delete_btn:
-            try:
-                supabase.table("usuarios_tokens").delete().eq("owner_name", st.session_state.username).execute()
-                st.success("🗑️ Token eliminado correctamente. Ya no recibirás notificaciones.")
-                st.cache_data.clear()
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error al eliminar token: {e}")
+                else:
+                    st.error("Error al eliminar token.")
     
-    # --- Probar notificación ---
-    st.divider()
-    st.subheader("🧪 Probar notificación")
-    with st.form("test_notification"):
-        mensaje_test = st.text_input("Mensaje de prueba", value="¡Hola! Esta es una notificación de prueba desde RIARE Exotic's.")
-        submitted_test = st.form_submit_button("🔊 Enviar prueba a Alexa")
-        if submitted_test:
-            if token_actual:
-                with st.spinner("Enviando notificación de prueba..."):
-                    exito, mensaje = enviar_notificacion_alexa(mensaje_test, st.session_state.username)
-                    if exito:
-                        st.success("✅ ¡Notificación enviada! Deberías escucharla en tu Alexa en unos segundos.")
+    # ---- SECCIÓN HOME ASSISTANT ----
+    st.markdown("""
+    <div class="config-section">
+        <h4>🏠 Home Assistant</h4>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if webhook_actual:
+        st.success("✅ Webhook de Home Assistant configurado")
+        st.info(f"URL: `{webhook_actual}`")
+    else:
+        st.warning("⚠️ Webhook de Home Assistant no configurado")
+    
+    col_ha1, col_ha2 = st.columns([3, 1])
+    with col_ha1:
+        with st.form("webhook_form"):
+            st.markdown("""
+            **📲 Notificaciones por Home Assistant**
+            
+            1. Crea una automatización en Home Assistant con trigger **Webhook**.
+            2. Copia el ID del webhook (ej: `-bJwerBoOVrL27UuEY227tFZ2O`).
+            3. Construye la URL completa:
+               - Si usas Nabu Casa: `https://xxxxxx.ui.nabu.casa/api/webhook/TU_ID`
+               - Si es local: `http://192.168.1.100:8123/api/webhook/TU_ID`
+            """)
+            webhook_input = st.text_input("🔗 URL del Webhook de HA", placeholder="https://xxxxxx.ui.nabu.casa/api/webhook/TU_ID", value=webhook_actual if webhook_actual else "")
+            submitted_webhook = st.form_submit_button("💾 Guardar webhook", use_container_width=True)
+            
+            if submitted_webhook:
+                if webhook_input.strip():
+                    if guardar_config_usuario(st.session_state.username, webhook_ha=webhook_input.strip()):
+                        st.success("✅ Webhook guardado correctamente. ¡Ya recibirás notificaciones en Home Assistant!")
+                        st.cache_data.clear()
+                        st.rerun()
                     else:
-                        st.error(f"❌ Error: {mensaje}")
-            else:
-                st.warning("⚠️ Primero debes configurar tu token de Voice Monkey para probar.")
+                        st.error("❌ Error al guardar webhook.")
+                else:
+                    st.error("La URL del webhook no puede estar vacía.")
+    
+    with col_ha2:
+        if webhook_actual:
+            if st.button("🗑️ Eliminar webhook", key="del_webhook", use_container_width=True):
+                if eliminar_config_usuario(st.session_state.username, "webhook"):
+                    st.success("🗑️ Webhook eliminado.")
+                    st.cache_data.clear()
+                    st.rerun()
+                else:
+                    st.error("Error al eliminar webhook.")
+    
+    # ---- PRUEBA DE NOTIFICACIONES DUAL ----
+    st.divider()
+    st.subheader("🧪 Probar ambos sistemas")
+    
+    with st.form("test_dual"):
+        mensaje_test = st.text_input("Mensaje de prueba", value="¡Hola! Esta es una notificación de prueba desde RIARE Exotic's.")
+        submitted_test = st.form_submit_button("🔊 Enviar prueba a Alexa y HA")
+        if submitted_test:
+            with st.spinner("Enviando notificaciones de prueba..."):
+                resultados = enviar_notificaciones_dual(mensaje_test, st.session_state.username, "Prueba RIARE")
+                
+                # Mostrar resultados de Alexa
+                if resultados["alexa"]["enviado"]:
+                    st.success(f"✅ Alexa: {resultados['alexa']['mensaje']}")
+                else:
+                    st.info(f"ℹ️ Alexa: {resultados['alexa']['mensaje']}")
+                
+                # Mostrar resultados de HA
+                if resultados["ha"]["enviado"]:
+                    st.success(f"✅ HA: {resultados['ha']['mensaje']}")
+                else:
+                    st.info(f"ℹ️ HA: {resultados['ha']['mensaje']}")
+                
+                if not resultados["alexa"]["enviado"] and not resultados["ha"]["enviado"]:
+                    st.warning("⚠️ No has configurado ningún sistema de notificaciones. Ve a las secciones de arriba para configurar.")
 
 # ---- ESTADÍSTICAS GLOBALES ----
 elif menu == "📈 Estadísticas Globales":
