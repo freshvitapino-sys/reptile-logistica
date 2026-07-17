@@ -18,15 +18,8 @@ st.set_page_config(
 # ---------- ESTILOS CSS (TEMA OSCURO + MOVIL) ----------
 st.markdown("""
 <style>
-    /* Ajustes generales para móvil */
-    .stApp {
-        background-color: #0e1117;
-        padding: 0.5rem;
-    }
-    .css-1d391kg, .stSidebar {
-        background-color: #1e2229;
-    }
-    /* Tarjetas más grandes para móvil */
+    .stApp { background-color: #0e1117; padding: 0.5rem; }
+    .css-1d391kg, .stSidebar { background-color: #1e2229; }
     .stAlert, .stForm, .stSelectbox, .stTextInput, .stNumberInput, .stDataFrame, .stMarkdown {
         background-color: #262b33;
         border-radius: 12px;
@@ -35,7 +28,6 @@ st.markdown("""
         color: #eaeef2;
         font-size: 1rem;
     }
-    /* Métricas con borde más visible */
     div[data-testid="metric-container"] {
         background-color: #1e2229;
         border-radius: 12px;
@@ -44,15 +36,8 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         margin-bottom: 0.5rem;
     }
-    div[data-testid="metric-container"] label {
-        color: #b0bec5 !important;
-        font-size: 0.9rem !important;
-    }
-    div[data-testid="metric-container"] div {
-        color: #ffffff !important;
-        font-size: 1.4rem !important;
-    }
-    /* Botones más grandes para táctil */
+    div[data-testid="metric-container"] label { color: #b0bec5 !important; font-size: 0.9rem !important; }
+    div[data-testid="metric-container"] div { color: #ffffff !important; font-size: 1.4rem !important; }
     .stButton > button {
         background-color: #4caf50;
         color: white;
@@ -65,11 +50,7 @@ st.markdown("""
         width: 100%;
         min-height: 50px;
     }
-    .stButton > button:hover {
-        background-color: #388e3c;
-        color: white;
-    }
-    /* Botones de selección de ejemplar (personalizados) */
+    .stButton > button:hover { background-color: #388e3c; color: white; }
     .ejemplar-btn {
         background-color: #2a2f39;
         color: #eaeef2;
@@ -83,19 +64,13 @@ st.markdown("""
         cursor: pointer;
         font-size: 0.95rem;
     }
-    .ejemplar-btn:hover {
-        background-color: #3a4050;
-        border-color: #4caf50;
-    }
+    .ejemplar-btn:hover { background-color: #3a4050; border-color: #4caf50; }
     .ejemplar-btn-seleccionado {
         background-color: #4caf50;
         color: white;
         border-color: #4caf50;
     }
-    /* Títulos */
-    h1, h2, h3, h4, h5, p, li, label {
-        color: #eaeef2 !important;
-    }
+    h1, h2, h3, h4, h5, p, li, label { color: #eaeef2 !important; }
     .main-title {
         text-align: center;
         font-size: 2rem;
@@ -110,11 +85,7 @@ st.markdown("""
         font-size: 0.9rem;
         margin-bottom: 1.5rem;
     }
-    /* Sidebar */
-    .stSidebar .stRadio label {
-        color: #b0bec5 !important;
-        font-size: 1rem;
-    }
+    .stSidebar .stRadio label { color: #b0bec5 !important; font-size: 1rem; }
     .stSidebar .stRadio div[role="radiogroup"] label {
         background-color: #2a2f39;
         padding: 0.7rem 1rem;
@@ -123,14 +94,11 @@ st.markdown("""
         color: #ffffff !important;
         font-size: 1rem;
     }
-    .stSidebar .stRadio div[role="radiogroup"] label:hover {
-        background-color: #3a4050;
-    }
+    .stSidebar .stRadio div[role="radiogroup"] label:hover { background-color: #3a4050; }
     .stSidebar .stRadio div[role="radiogroup"] label[data-selected="true"] {
         background-color: #4caf50;
         color: white !important;
     }
-    /* Inputs */
     .stSelectbox > div > div, .stTextInput > div > div, .stNumberInput > div > div {
         background-color: #2a2f39;
         color: #eaeef2;
@@ -139,7 +107,6 @@ st.markdown("""
         font-size: 1rem;
         padding: 0.5rem;
     }
-    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 6px;
         background-color: #1e2229;
@@ -161,7 +128,6 @@ st.markdown("""
         background-color: #4caf50;
         color: white;
     }
-    /* Login centrado */
     .login-container {
         display: flex;
         justify-content: center;
@@ -177,17 +143,8 @@ st.markdown("""
         width: 100%;
         border: 1px solid #2a2f39;
     }
-    .login-box h1 {
-        color: #4caf50;
-        text-align: center;
-        font-size: 1.8rem;
-        margin-bottom: 0.5rem;
-    }
-    .login-box p {
-        color: #b0bec5;
-        text-align: center;
-        margin-bottom: 1.5rem;
-    }
+    .login-box h1 { color: #4caf50; text-align: center; font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .login-box p { color: #b0bec5; text-align: center; margin-bottom: 1.5rem; }
     .login-box .stTextInput > div > div {
         background-color: #2a2f39 !important;
         border: 1px solid #3a4050 !important;
@@ -205,32 +162,14 @@ st.markdown("""
         font-size: 1.1rem;
         transition: 0.3s;
     }
-    .login-box .stButton > button:hover {
-        background-color: #388e3c;
-    }
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-        width: 6px;
-    }
-    ::-webkit-scrollbar-track {
-        background: #1e2229;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #4caf50;
-        border-radius: 3px;
-    }
-    /* Ajustes para móvil: columnas en bloque */
+    .login-box .stButton > button:hover { background-color: #388e3c; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #1e2229; }
+    ::-webkit-scrollbar-thumb { background: #4caf50; border-radius: 3px; }
     @media (max-width: 768px) {
-        .stColumns {
-            flex-direction: column !important;
-        }
-        .stColumns > div {
-            width: 100% !important;
-            margin-bottom: 1rem;
-        }
-        .main-title {
-            font-size: 1.6rem;
-        }
+        .stColumns { flex-direction: column !important; }
+        .stColumns > div { width: 100% !important; margin-bottom: 1rem; }
+        .main-title { font-size: 1.6rem; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -256,7 +195,32 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ---------- BASE DE CONOCIMIENTO ----------
+# ---------- BASE DE CONOCIMIENTO (con alimentación dinámica) ----------
+# Nueva función para recomendación de alimentación según peso
+def get_feed_recommendation(weight, species):
+    """
+    Retorna (intervalo_dias, presa_sugerida) según el peso y la especie.
+    Por ahora solo para Python regius / Piton Bola.
+    """
+    if species not in ["Python regius", "Piton Bola"]:
+        # Para otras especies, usar el valor por defecto
+        return 7, "Roedor"
+    
+    # Rangos típicos para pitones bola (basado en peso)
+    if weight < 150:  # Cría
+        return 5, "Pinky (ratón recién nacido)"
+    elif weight < 300:  # Juvenil pequeño
+        return 6, "Fuzzy (ratón con pelo)"
+    elif weight < 600:  # Juvenil mediano
+        return 7, "Ratón pequeño / Rata weanling"
+    elif weight < 1000:  # Sub-adulto
+        return 10, "Rata pequeña"
+    elif weight < 1500:  # Adulto joven
+        return 12, "Rata mediana"
+    else:  # Adulto grande
+        return 14, "Rata grande / Conejo pequeño"
+
+# Diccionario base (se mantiene para otros datos)
 SPECIES_DB = {
     "Boa constrictor": {
         "feed_interval": 10,
@@ -273,7 +237,7 @@ SPECIES_DB = {
         "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Conejo"]
     },
     "Python regius": {
-        "feed_interval": 7,
+        "feed_interval": 7,  # valor por defecto, se sobreescribe con get_feed_recommendation
         "temp_range": (24, 30),
         "humidity": 55,
         "adult_weight": 2000,
@@ -284,7 +248,7 @@ SPECIES_DB = {
         "birth_weight": 60,
         "months_to_adult": 24,
         "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Rata", "Pinky", "Rata africana", "Fuzzy", "Ratón"]
+        "alimentos_sugeridos": ["Pinky", "Fuzzy", "Ratón pequeño", "Rata weanling", "Rata pequeña", "Rata mediana", "Rata grande"]
     },
     "Pantherophis guttatus": {
         "feed_interval": 5,
@@ -329,7 +293,7 @@ SPECIES_DB = {
         "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Codorniz"]
     },
     "Piton Bola": {
-        "feed_interval": 7,
+        "feed_interval": 7,  # se sobreescribe
         "temp_range": (24, 30),
         "humidity": 55,
         "adult_weight": 2000,
@@ -340,7 +304,7 @@ SPECIES_DB = {
         "birth_weight": 60,
         "months_to_adult": 24,
         "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Rata", "Pinky", "Rata africana", "Fuzzy", "Ratón"]
+        "alimentos_sugeridos": ["Pinky", "Fuzzy", "Ratón pequeño", "Rata weanling", "Rata pequeña", "Rata mediana", "Rata grande"]
     },
     "Pogona Viticeps": {
         "feed_interval": 1,
@@ -412,8 +376,15 @@ def classify_food(food_text):
     return 'otro'
 
 # ---------- FUNCIONES AUXILIARES ----------
-def get_species_info(species_name):
-    return SPECIES_DB.get(species_name, DEFAULT_SPECIES)
+def get_species_info(species_name, weight=None):
+    """Devuelve la información de la especie, actualizando feed_interval si se proporciona peso y es pitón bola."""
+    base = SPECIES_DB.get(species_name, DEFAULT_SPECIES)
+    if weight is not None and species_name in ["Python regius", "Piton Bola"]:
+        interval, prey = get_feed_recommendation(weight, species_name)
+        base = base.copy()
+        base['feed_interval'] = interval
+        base['presa_sugerida'] = prey
+    return base
 
 def safe_days_between(date_str):
     try:
@@ -448,7 +419,7 @@ def estimate_age(current_weight, species_info):
 # ---------- AUTENTICACIÓN ----------
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
-    st.session_state.selected_reptile = None  # Para almacenar el ID seleccionado
+    st.session_state.selected_reptile = None
 
 if not st.session_state.authenticated:
     st.markdown("""
@@ -491,7 +462,7 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.session_state.selected_reptile = None
         st.rerun()
-    st.caption("🐍 RIARE Exotic's v3.0")
+    st.caption("🐍 RIARE Exotic's v3.1")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -520,28 +491,23 @@ def get_peso_history(unique_id):
 
 # ---------- FUNCIÓN PARA MOSTRAR BOTONES DE EJEMPLAR ----------
 def mostrar_botones_ejemplares(reptiles):
-    """Muestra botones en lugar de selectbox para seleccionar ejemplar."""
     if not reptiles:
         st.info("No hay ejemplares registrados.")
         return None
     
-    # Dividir en columnas de 2 para móvil
     cols = st.columns(2)
     selected_id = None
     
     for idx, r in enumerate(reptiles):
         col = cols[idx % 2]
         label = f"{r.get('name', 'Sin nombre')}\n({r.get('species', 'N/A')})"
-        # Estilo: si está seleccionado, resaltar
         is_selected = (st.session_state.get('selected_reptile') == r['unique_id'])
         btn_style = "ejemplar-btn-seleccionado" if is_selected else "ejemplar-btn"
         
-        # Botón
         if col.button(label, key=f"btn_{r['unique_id']}", use_container_width=True):
             st.session_state.selected_reptile = r['unique_id']
             st.rerun()
     
-    # Si hay uno seleccionado, devolverlo
     if st.session_state.selected_reptile:
         for r in reptiles:
             if r['unique_id'] == st.session_state.selected_reptile:
@@ -558,7 +524,6 @@ if menu == "📊 Panel de Control":
     if not reptiles:
         st.info("No hay ejemplares registrados. Ve a 'Nuevo Ejemplar' para agregar uno.")
     else:
-        # Mostrar botones para seleccionar ejemplar
         st.subheader("🦎 Selecciona un ejemplar")
         item = mostrar_botones_ejemplares(reptiles)
         
@@ -567,8 +532,10 @@ if menu == "📊 Panel de Control":
         else:
             unique_id = item['unique_id']
             species_name = item.get('species', '')
-            species_info = get_species_info(species_name)
+            current_weight = safe_int(item.get('peso'))
+            species_info = get_species_info(species_name, current_weight)  # Pasar peso para obtener intervalo dinámico
             feed_interval = species_info.get("feed_interval", 7)
+            prey_suggested = species_info.get("presa_sugerida", "Roedor")
 
             alimentacion = get_events("alimentacion", unique_id)
             muda = get_events("muda", unique_id)
@@ -580,8 +547,7 @@ if menu == "📊 Panel de Control":
             with col1:
                 st.metric("🐍 Especie", species_name if species_name else "Desconocida")
             with col2:
-                peso = safe_int(item.get('peso'))
-                st.metric("⚖️ Peso actual", f"{peso} g")
+                st.metric("⚖️ Peso actual", f"{current_weight} g")
             with col3:
                 if alimentacion and len(alimentacion) > 0:
                     last_feed = alimentacion[0].get('fecha')
@@ -613,26 +579,26 @@ if menu == "📊 Panel de Control":
 
             st.divider()
 
-            # ---- Recomendaciones ----
+            # ---- Recomendaciones personalizadas (con alimentación dinámica) ----
             st.subheader("🧠 Recomendaciones personalizadas")
             with st.container():
                 col_rec1, col_rec2 = st.columns([2, 1])
                 with col_rec1:
-                    # Alimentación
+                    # Alimentación dinámica
                     if alimentacion and len(alimentacion) > 0:
                         last_feed_date_str = alimentacion[0].get('fecha')
                         try:
                             last_feed_date = datetime.strptime(last_feed_date_str[:10], "%Y-%m-%d")
-                            next_feed_recommended = last_feed_date + timedelta(days=feed_interval)
-                            days_until = (next_feed_recommended - datetime.now()).days
-                            if days_until <= 0:
-                                st.error(f"⚠️ **Alerta**: ¡Han pasado {abs(days_until)} días! (Intervalo: cada {feed_interval} días)")
+                            days_since = (datetime.now() - last_feed_date).days
+                            if days_since > feed_interval:
+                                st.error(f"⚠️ **Alerta**: Han pasado **{days_since} días** desde la última alimentación. Debería comer cada {feed_interval} días.")
                             else:
-                                st.success(f"✅ Próxima alimentación en {days_until} días (cada {feed_interval} días)")
+                                st.success(f"✅ Última alimentación hace {days_since} días. Intervalo sugerido: cada {feed_interval} días.")
+                            st.info(f"🍗 **Presa sugerida**: {prey_suggested}")
                         except:
-                            st.info("ℹ️ No se pudo calcular (fecha inválida).")
+                            st.info("ℹ️ No se pudo calcular la fecha exacta.")
                     else:
-                        st.info(f"ℹ️ Recomendado: alimentar cada {feed_interval} días.")
+                        st.info(f"ℹ️ Para esta especie y peso, se recomienda alimentar cada **{feed_interval} días** con **{prey_suggested}**.")
 
                     # Muda
                     shed_interval = species_info.get("shed_interval", 30)
@@ -647,7 +613,7 @@ if menu == "📊 Panel de Control":
                             else:
                                 st.info(f"🔄 Próxima muda estimada en {days_until_shed} días.")
                         except:
-                            st.info("ℹ️ No se pudo calcular.")
+                            st.info("ℹ️ No se pudo calcular la próxima muda.")
                     else:
                         st.info(f"ℹ️ La especie {species_name} muda cada {shed_interval} días aprox.")
 
@@ -655,12 +621,11 @@ if menu == "📊 Panel de Control":
                     temp_min, temp_max = species_info.get("temp_range", (25, 30))
                     hum = species_info.get("humidity", 50)
                     st.write(f"🌡️ **Condiciones ideales**: {temp_min}°C - {temp_max}°C, humedad ~{hum}%.")
-                    st.write(f"🍽️ **Dieta**: {species_info.get('diet', 'N/A')}")
+                    st.write(f"🍽️ **Dieta general**: {species_info.get('diet', 'N/A')}")
                     st.write(f"🏠 **Terrario**: {species_info.get('enclosure', 'N/A')}")
 
                 with col_rec2:
                     adult_weight = species_info.get("adult_weight", 1000)
-                    current_weight = safe_int(item.get('peso'))
                     if current_weight > 0:
                         progress = min(current_weight / adult_weight, 1.0)
                         st.metric("📈 Progreso", f"{current_weight}g / {adult_weight}g")
@@ -834,7 +799,7 @@ elif menu == "➕ Nuevo Ejemplar":
                     supabase.table("reptiles").insert(data).execute()
                     st.success(f"✅ Ejemplar **{u_id}** registrado correctamente.")
                     st.cache_data.clear()
-                    st.session_state.selected_reptile = u_id  # Auto-seleccionar
+                    st.session_state.selected_reptile = u_id
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
