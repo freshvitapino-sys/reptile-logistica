@@ -166,7 +166,6 @@ st.markdown("""
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #1e2229; }
     ::-webkit-scrollbar-thumb { background: #4caf50; border-radius: 3px; }
-    /* Tabla comparativa */
     .tabla-referencia {
         background-color: #1e2229;
         border-radius: 12px;
@@ -228,16 +227,15 @@ def calcular_recomendacion_presa(peso_serpiente):
             "etapa": "Sin datos"
         }
     
-    # Determinar etapa y porcentajes
-    if peso_serpiente < 500:  # Juvenil
+    if peso_serpiente < 500:
         porcentaje_min, porcentaje_max = 0.10, 0.15
         frecuencia = "cada 5-7 días"
         etapa = "Juvenil (<500g)"
-    elif peso_serpiente < 1000:  # Sub-adulto
+    elif peso_serpiente < 1000:
         porcentaje_min, porcentaje_max = 0.07, 0.10
         frecuencia = "cada 7-10 días"
         etapa = "Sub-adulto (500-1000g)"
-    else:  # Adulto
+    else:
         porcentaje_min, porcentaje_max = 0.05, 0.07
         frecuencia = "cada 10-14 días"
         etapa = "Adulto (>1000g)"
@@ -417,7 +415,7 @@ def get_species_info(species_name, weight=None):
     if weight is not None and weight > 0 and species_name in ["Python regius", "Piton Bola"]:
         rec = calcular_recomendacion_presa(weight)
         base = base.copy()
-        base['feed_interval'] = rec.get('frecuencia', '7 días')  # se muestra como texto
+        base['feed_interval'] = rec.get('frecuencia', '7 días')
         base['presa_sugerida'] = rec.get('rango_presa', 'N/A')
         base['peso_presa_min'] = rec.get('peso_min', 0)
         base['peso_presa_max'] = rec.get('peso_max', 0)
@@ -443,18 +441,32 @@ def safe_int(value, default=0):
     except (ValueError, TypeError):
         return default
 
-def estimate_age(current_weight, species_info):
-    birth_weight = species_info.get("birth_weight", 20)
-    adult_weight = species_info.get("adult_weight", 1000)
-    months_to_adult = species_info.get("months_to_adult", 24)
-    if adult_weight <= birth_weight:
+def calcular_edad(fecha_nacimiento):
+    """Calcula la edad en años, meses y días a partir de una fecha de nacimiento."""
+    if fecha_nacimiento is None:
         return None
-    if current_weight <= birth_weight:
-        return 0
-    if current_weight >= adult_weight:
-        return months_to_adult
-    proportion = (current_weight - birth_weight) / (adult_weight - birth_weight)
-    return round(proportion * months_to_adult, 1)
+    try:
+        if isinstance(fecha_nacimiento, str):
+            fecha_nac = datetime.strptime(fecha_nacimiento[:10], "%Y-%m-%d").date()
+        else:
+            fecha_nac = fecha_nacimiento
+        hoy = datetime.now().date()
+        if fecha_nac > hoy:
+            return None
+        años = hoy.year - fecha_nac.year
+        meses = hoy.month - fecha_nac.month
+        dias = hoy.day - fecha_nac.day
+        if dias < 0:
+            meses -= 1
+            # Ajustar días
+            ultimo_dia_mes_anterior = (hoy.replace(day=1) - timedelta(days=1)).day
+            dias += ultimo_dia_mes_anterior
+        if meses < 0:
+            años -= 1
+            meses += 12
+        return f"{años} años, {meses} meses, {dias} días" if años > 0 else f"{meses} meses, {dias} días"
+    except:
+        return None
 
 # ---------- AUTENTICACIÓN ----------
 if "authenticated" not in st.session_state:
@@ -502,7 +514,7 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.session_state.selected_reptile = None
         st.rerun()
-    st.caption("🐍 RIARE Exotic's v3.3")
+    st.caption("🐍 RIARE Exotic's v3.4")
 
 # ---------- FUNCIONES DE CONSULTA ----------
 @st.cache_data(ttl=60)
@@ -536,13 +548,11 @@ def mostrar_botones_ejemplares(reptiles):
         return None
     
     cols = st.columns(2)
-    selected_id = None
-    
     for idx, r in enumerate(reptiles):
         col = cols[idx % 2]
         label = f"{r.get('name', 'Sin nombre')}\n({r.get('species', 'N/A')})"
         is_selected = (st.session_state.get('selected_reptile') == r['unique_id'])
-        
+        btn_class = "ejemplar-btn-seleccionado" if is_selected else "ejemplar-btn"
         if col.button(label, key=f"btn_{r['unique_id']}", use_container_width=True):
             st.session_state.selected_reptile = r['unique_id']
             st.rerun()
@@ -613,10 +623,20 @@ if menu == "📊 Panel de Control":
                 st.write(f"**⚥ Sexo:** {item.get('sex', 'N/A')}")
                 st.write(f"**📄 Pedimento:** {item.get('pedimento', 'N/A')}")
                 st.write(f"**📝 Notas:** {item.get('notas', 'N/A')}")
+                # Edad calculada desde fecha_nacimiento
+                fecha_nac = item.get('fecha_nacimiento')
+                if fecha_nac:
+                    edad_texto = calcular_edad(fecha_nac)
+                    if edad_texto:
+                        st.write(f"**🎂 Edad:** {edad_texto}")
+                    else:
+                        st.write("**🎂 Edad:** No disponible")
+                else:
+                    st.write("**🎂 Edad:** No registrada")
 
             st.divider()
 
-            # ---- Recomendaciones personalizadas (con tabla comparativa) ----
+            # ---- Recomendaciones personalizadas ----
             st.subheader("🧠 Recomendaciones personalizadas")
             with st.container():
                 col_rec1, col_rec2 = st.columns([2, 1])
@@ -628,7 +648,6 @@ if menu == "📊 Panel de Control":
                         st.info(f"🍗 **Presa recomendada:** {rec['rango_presa']} (aprox. {rec['porcentaje_min']} - {rec['porcentaje_max']} del peso corporal)")
                         st.info(f"📅 **Frecuencia:** {rec['frecuencia']}")
                         
-                        # Mostrar tabla comparativa
                         with st.expander("📖 Tabla comparativa de referencia (pitones bola)", expanded=True):
                             tabla_html = """
                             <div class="tabla-referencia">
@@ -669,13 +688,11 @@ if menu == "📊 Panel de Control":
                             """
                             st.markdown(tabla_html, unsafe_allow_html=True)
                         
-                        # Comparar con la última alimentación si existe
                         if alimentacion and len(alimentacion) > 0:
                             last_feed_date_str = alimentacion[0].get('fecha')
                             try:
                                 last_feed_date = datetime.strptime(last_feed_date_str[:10], "%Y-%m-%d")
                                 days_since = (datetime.now() - last_feed_date).days
-                                # Extraer número de días de la frecuencia (ej: "cada 5-7 días" -> 5)
                                 import re
                                 freq_days = re.findall(r'\d+', rec['frecuencia'])
                                 if freq_days:
@@ -690,7 +707,6 @@ if menu == "📊 Panel de Control":
                     elif current_weight <= 0:
                         st.warning("⚠️ **Registra el peso del ejemplar** para obtener una recomendación precisa de alimentación.")
                     else:
-                        # Para otras especies, mostrar datos generales
                         st.info(f"ℹ️ Para {species_name}, consulta guías específicas de alimentación.")
 
                     # Muda
@@ -725,19 +741,6 @@ if menu == "📊 Panel de Control":
                         st.progress(progress, text=f"{progress*100:.1f}% adulto")
                     else:
                         st.info("Registra peso para ver progreso.")
-
-                    if current_weight > 0:
-                        estimated_age = estimate_age(current_weight, species_info)
-                        if estimated_age is not None:
-                            if estimated_age >= species_info.get("months_to_adult", 24):
-                                st.metric("📅 Edad estimada", "Adulto")
-                            else:
-                                st.metric("📅 Edad estimada", f"~{estimated_age} meses")
-                            st.caption("⏳ Basado en peso y especie")
-                        else:
-                            st.info("🕒 No se puede estimar.")
-                    else:
-                        st.info("🕒 Registra peso para estimar edad.")
 
             st.divider()
 
@@ -856,7 +859,7 @@ if menu == "📊 Panel de Control":
                 else:
                     st.info("Sin registros veterinarios.")
 
-# ---- NUEVO EJEMPLAR ----
+# ---- NUEVO EJEMPLAR (con fecha de nacimiento) ----
 elif menu == "➕ Nuevo Ejemplar":
     st.header("➕ Registrar nuevo ejemplar")
     with st.form("new_reptile", clear_on_submit=True):
@@ -869,6 +872,7 @@ elif menu == "➕ Nuevo Ejemplar":
         with col2:
             pedimento = st.text_input("📄 Pedimento (opcional)")
             peso = st.number_input("⚖️ Peso (g)", min_value=0, step=50)
+            fecha_nacimiento = st.date_input("🎂 Fecha de nacimiento (opcional)", value=None, min_value=datetime(2020,1,1).date(), max_value=datetime.now().date())
         notas = st.text_area("📝 Notas adicionales")
         
         submitted = st.form_submit_button("💾 Guardar ejemplar", use_container_width=True)
@@ -886,7 +890,8 @@ elif menu == "➕ Nuevo Ejemplar":
                     "pedimento": pedimento,
                     "peso": int(peso),
                     "notas": notas,
-                    "fase": fase
+                    "fase": fase,
+                    "fecha_nacimiento": str(fecha_nacimiento) if fecha_nacimiento else None
                 }
                 try:
                     supabase.table("reptiles").insert(data).execute()
