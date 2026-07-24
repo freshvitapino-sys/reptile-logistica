@@ -11,13 +11,13 @@ import re
 import time
 
 # ============================================================
-# CONFIGURACIÓN DE PÁGINA - OPTIMIZADA PARA MÓVIL
+# CONFIGURACION DE PAGINA - OPTIMIZADA PARA MOVIL
 # ============================================================
 st.set_page_config(
     page_title="RIARE Exotic's",
     page_icon="🦎",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Sidebar colapsado por defecto en móvil
+    initial_sidebar_state="collapsed"
 )
 
 # ============================================================
@@ -31,14 +31,14 @@ st.markdown("""
         padding: 0 !important;
     }
 
-    /* Ocultar header de Streamlit en móvil */
+    /* Ocultar header de Streamlit en movil */
     header[data-testid="stHeader"] { display: none !important; }
 
-    /* ===== TIPOGRAFÍA RESPONSIVA ===== */
+    /* ===== TIPOGRAFIA RESPONSIVA ===== */
     html { font-size: 16px; }
     @media (max-width: 480px) { html { font-size: 15px; } }
 
-    /* ===== CARDS TÁCTILES ===== */
+    /* ===== CARDS TACTILES ===== */
     .reptile-card {
         background: linear-gradient(145deg, #1e2430, #252b3a);
         border-radius: 16px;
@@ -490,16 +490,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================================================
-# CONEXIÓN A SUPABASE CON MANEJO DE ERRORES MEJORADO
+# CONEXION A SUPABASE
 # ============================================================
 @st.cache_resource(show_spinner=False)
 def init_supabase():
     try:
-        url = st.secrets['PROJECT_URL'].strip().rstrip('/')
-        key = st.secrets['API_SUPABASE'].strip()
+        url = st.secrets["PROJECT_URL"].strip().rstrip("/")
+        key = st.secrets["API_SUPABASE"].strip()
         return create_client(url, key)
     except Exception as e:
-        st.error(f"Error de conexión: {e}")
+        st.error(f"Error de conexion: {e}")
         return None
 
 supabase = init_supabase()
@@ -508,11 +508,8 @@ supabase = init_supabase()
 # FUNCIONES DE UTILIDAD
 # ============================================================
 def show_toast(message, type_="success", duration=3000):
-    """Muestra una notificación tipo toast que desaparece automáticamente."""
     icons = {"success": "✅", "error": "❌", "warning": "⚠️", "info": "ℹ️"}
-    colors = {"success": "#4caf50", "error": "#f44336", "warning": "#ff9800", "info": "#2196f3"}
     icon = icons.get(type_, "ℹ️")
-
     toast_html = f"""
     <div class="toast-container">
         <div class="toast {type_}">
@@ -545,7 +542,7 @@ def safe_int(value, default=0):
         return default
 
 # ============================================================
-# CONFIGURACIÓN DE USUARIO
+# CONFIGURACION DE USUARIO
 # ============================================================
 @st.cache_data(ttl=300)
 def obtener_config_usuario(owner_name):
@@ -556,7 +553,7 @@ def obtener_config_usuario(owner_name):
         if res.data and len(res.data) > 0:
             return res.data[0]
     except Exception as e:
-        st.error(f"Error de configuración: {e}")
+        st.error(f"Error de configuracion: {e}")
     return {"token_voice_monkey": None, "webhook_ha": None}
 
 def guardar_config_usuario(owner_name, token_voice_monkey=None, webhook_ha=None):
@@ -584,9 +581,9 @@ def enviar_notificacion_alexa(mensaje, owner_name):
     if not token:
         return False, "Token no configurado"
     try:
-        response = requests.post("https://api-v2.voicemonkey.io/announcement", 
+        response = requests.post("https://api-v2.voicemonkey.io/announcement",
                                 json={"token": token, "text": mensaje}, timeout=10)
-        return response.status_code == 200, "Alexa ✅" if response.status_code == 200 else f"Error {response.status_code}"
+        return response.status_code == 200, "Alexa OK" if response.status_code == 200 else f"Error {response.status_code}"
     except Exception as e:
         return False, f"Error: {e}"
 
@@ -597,7 +594,7 @@ def enviar_notificacion_ha(mensaje, owner_name, titulo="RIARE"):
         return False, "Webhook no configurado"
     try:
         response = requests.post(webhook_url, json={"message": mensaje, "title": titulo}, timeout=10)
-        return response.status_code == 200, "HA ✅" if response.status_code == 200 else f"Error {response.status_code}"
+        return response.status_code == 200, "HA OK" if response.status_code == 200 else f"Error {response.status_code}"
     except Exception as e:
         return False, f"Error: {e}"
 
@@ -610,42 +607,42 @@ SPECIES_DB = {
         "adult_weight": 5000, "shed_interval": 45, "diet": "Roedores",
         "enclosure": "120x60x60 cm", "notes": "Requiere ramas para trepar",
         "birth_weight": 50, "months_to_adult": 36, "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Conejo"]
+        "alimentos_sugeridos": ["Rata", "Raton", "Pollo", "Conejo"]
     },
     "Python regius": {
         "feed_interval": 7, "temp_range": (24, 30), "humidity": 55,
         "adult_weight": 2000, "shed_interval": 30, "diet": "Roedores",
         "enclosure": "90x45x45 cm", "notes": "Alta humedad durante muda",
         "birth_weight": 60, "months_to_adult": 24, "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Pinky", "Fuzzy", "Ratón pequeño", "Rata weanling", "Rata pequeña", "Rata mediana", "Rata grande"]
+        "alimentos_sugeridos": ["Pinky", "Fuzzy", "Raton pequeno", "Rata weanling", "Rata pequena", "Rata mediana", "Rata grande"]
     },
     "Pantherophis guttatus": {
         "feed_interval": 5, "temp_range": (22, 28), "humidity": 40,
         "adult_weight": 800, "shed_interval": 20, "diet": "Roedores",
         "enclosure": "60x40x40 cm", "notes": "Muy activo, necesita espacio",
         "birth_weight": 10, "months_to_adult": 18, "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Ratón", "Pinky", "Fuzzy"]
+        "alimentos_sugeridos": ["Raton", "Pinky", "Fuzzy"]
     },
     "Lampropeltis getula": {
         "feed_interval": 7, "temp_range": (24, 29), "humidity": 50,
         "adult_weight": 1200, "shed_interval": 25, "diet": "Roedores, lagartijas",
-        "enclosure": "90x45x45 cm", "notes": "Puede ser caníbal",
+        "enclosure": "90x45x45 cm", "notes": "Puede ser canibal",
         "birth_weight": 15, "months_to_adult": 20, "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Ratón", "Lagartija", "Pinky"]
+        "alimentos_sugeridos": ["Raton", "Lagartija", "Pinky"]
     },
     "Morelia spilota": {
         "feed_interval": 10, "temp_range": (26, 32), "humidity": 60,
         "adult_weight": 3000, "shed_interval": 40, "diet": "Roedores y aves",
-        "enclosure": "120x60x120 cm", "notes": "Arborícola, necesita altura",
+        "enclosure": "120x60x120 cm", "notes": "Arboricola, necesita altura",
         "birth_weight": 40, "months_to_adult": 30, "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Codorniz"]
+        "alimentos_sugeridos": ["Rata", "Raton", "Pollo", "Codorniz"]
     },
     "Piton Bola": {
         "feed_interval": 7, "temp_range": (24, 30), "humidity": 55,
         "adult_weight": 2000, "shed_interval": 30, "diet": "Roedores",
-        "enclosure": "90x45x45 cm", "notes": "Común en cautiverio",
+        "enclosure": "90x45x45 cm", "notes": "Comun en cautiverio",
         "birth_weight": 60, "months_to_adult": 24, "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Pinky", "Fuzzy", "Ratón pequeño", "Rata weanling", "Rata pequeña", "Rata mediana", "Rata grande"]
+        "alimentos_sugeridos": ["Pinky", "Fuzzy", "Raton pequeno", "Rata weanling", "Rata pequena", "Rata mediana", "Rata grande"]
     },
     "Pogona Viticeps": {
         "feed_interval": 1, "temp_range": (35, 40), "humidity": 30,
@@ -658,7 +655,7 @@ SPECIES_DB = {
 DEFAULT_SPECIES = {
     "feed_interval": 7, "temp_range": (25, 30), "humidity": 50,
     "adult_weight": 1000, "shed_interval": 30, "diet": "Roedores",
-    "enclosure": "Terrario estándar", "notes": "Sin información",
+    "enclosure": "Terrario estandar", "notes": "Sin informacion",
     "birth_weight": 20, "months_to_adult": 24, "diet_type": "carnivoro",
     "alimentos_sugeridos": None
 }
@@ -666,16 +663,15 @@ DEFAULT_SPECIES = {
 def calcular_recomendacion_presa(peso_serpiente):
     if not peso_serpiente or peso_serpiente <= 0:
         return {"rango_presa": "No disponible", "frecuencia": "Registra peso", "etapa": "Sin datos"}
-
     if peso_serpiente < 500:
-        return {"rango_presa": f"{peso_serpiente*0.10:.0f}g-{peso_serpiente*0.15:.0f}g", 
-                "frecuencia": "5-7 días", "etapa": "Juvenil", "porcentaje": "10-15%"}
+        return {"rango_presa": f"{peso_serpiente*0.10:.0f}g-{peso_serpiente*0.15:.0f}g",
+                "frecuencia": "5-7 dias", "etapa": "Juvenil", "porcentaje": "10-15%"}
     elif peso_serpiente < 1000:
         return {"rango_presa": f"{peso_serpiente*0.07:.0f}g-{peso_serpiente*0.10:.0f}g",
-                "frecuencia": "7-10 días", "etapa": "Sub-adulto", "porcentaje": "7-10%"}
+                "frecuencia": "7-10 dias", "etapa": "Sub-adulto", "porcentaje": "7-10%"}
     else:
         return {"rango_presa": f"{peso_serpiente*0.05:.0f}g-{peso_serpiente*0.07:.0f}g",
-                "frecuencia": "10-14 días", "etapa": "Adulto", "porcentaje": "5-7%"}
+                "frecuencia": "10-14 dias", "etapa": "Adulto", "porcentaje": "5-7%"}
 
 def get_species_info(species_name, weight=None):
     base = SPECIES_DB.get(species_name, DEFAULT_SPECIES).copy()
@@ -718,7 +714,7 @@ def get_peso_history(unique_id):
         return []
 
 # ============================================================
-# ESTADO DE SESIÓN
+# ESTADO DE SESION
 # ============================================================
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -728,116 +724,53 @@ if "current_page" not in st.session_state:
     st.session_state.current_page = "dashboard"
 if "search_query" not in st.session_state:
     st.session_state.search_query = ""
-if "show_fab_menu" not in st.session_state:
-    st.session_state.show_fab_menu = False
 if "step" not in st.session_state:
     st.session_state.step = 1
+if "add_type" not in st.session_state:
+    st.session_state.add_type = "menu"
+if "temp_reptile" not in st.session_state:
+    st.session_state.temp_reptile = {}
+if "feed_reptile" not in st.session_state:
+    st.session_state.feed_reptile = None
+if "weight_reptile" not in st.session_state:
+    st.session_state.weight_reptile = None
+if "shed_reptile" not in st.session_state:
+    st.session_state.shed_reptile = None
 
 # ============================================================
-# LOGIN SCREEN
-# ============================================================
-if not st.session_state.authenticated:
-    st.markdown("""
-    <div class="login-screen">
-        <div class="login-logo">🦎</div>
-        <div class="login-title">RIARE Exotic's</div>
-        <div class="login-subtitle">Gestión profesional de reptiles</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    with st.container():
-        username = st.text_input("👤 Nombre de Propietario", 
-                                placeholder="Tu nombre", 
-                                label_visibility="collapsed",
-                                key="login_user")
-
-        col1, col2, col3 = st.columns([1, 3, 1])
-        with col2:
-            if st.button("🚪 Ingresar", use_container_width=True, type="primary"):
-                if username.strip():
-                    st.session_state.authenticated = True
-                    st.session_state.username = username.strip()
-                    st.rerun()
-                else:
-                    st.error("Introduce tu nombre")
-    st.stop()
-
-# ============================================================
-# NAVEGACIÓN INFERIOR (BOTTOM NAV BAR)
-# ============================================================
-def render_bottom_nav():
-    pages = [
-        ("dashboard", "🏠", "Inicio"),
-        ("reptiles", "🦎", "Mis Reptiles"),
-        ("add", "➕", "Agregar"),
-        ("stats", "📊", "Estadísticas"),
-        ("settings", "⚙️", "Ajustes")
-    ]
-
-    nav_html = '<div class="bottom-nav">'
-    for page_id, icon, label in pages:
-        active = "active" if st.session_state.current_page == page_id else ""
-        nav_html += f'<button class="bottom-nav-item {active}" onclick="handleNav('{page_id}')">'
-        nav_html += f'<span class="icon">{icon}</span><span>{label}</span></button>'
-    nav_html += '</div>'
-
-    # JavaScript para manejar clicks
-    nav_html += """
-    <script>
-    function handleNav(page) {
-        const buttons = document.querySelectorAll('.bottom-nav-item');
-        buttons.forEach(btn => btn.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-        // Streamlit no permite JS directo, usamos un workaround con st.query_params
-        window.parent.postMessage({type: 'streamlit:setComponentValue', value: page}, '*');
-    }
-    </script>
-    """
-    st.markdown(nav_html, unsafe_allow_html=True)
-
-# ============================================================
-# HEADER CON BÚSQUEDA
+# FUNCIONES DE UI
 # ============================================================
 def render_header(title, show_search=False):
     st.markdown(f'<h2 style="margin-top:0.5rem; margin-bottom:0.5rem; padding:0 1rem;">{title}</h2>', unsafe_allow_html=True)
-
     if show_search:
-        search = st.text_input("🔍 Buscar ejemplar...", 
+        search = st.text_input("Buscar ejemplar", 
                               value=st.session_state.search_query,
                               key="search_input",
                               label_visibility="collapsed",
-                              placeholder="🔍 Buscar por nombre o especie...")
+                              placeholder="Buscar por nombre o especie...")
         st.session_state.search_query = search
         return search
     return ""
 
-# ============================================================
-# CARDS DE REPTIL (TÁCTILES Y GRANDES)
-# ============================================================
 def render_reptile_card(reptile, is_selected=False):
     selected_class = "selected" if is_selected else ""
-    name = reptile.get('name', 'Sin nombre')
-    species = reptile.get('species', 'N/A')
-    sex = reptile.get('sex', 'Desconocido')
-    peso = safe_int(reptile.get('peso'))
-    fase = reptile.get('fase', '')
-
-    badge = f'<span class="badge">{sex}</span>' if sex != 'Desconocido' else ''
+    name = reptile.get("name", "Sin nombre")
+    species = reptile.get("species", "N/A")
+    sex = reptile.get("sex", "Desconocido")
+    peso = safe_int(reptile.get("peso"))
+    fase = reptile.get("fase", "")
+    badge = f'<span class="badge">{sex}</span>' if sex != "Desconocido" else ""
     weight_text = f"{peso}g" if peso > 0 else "Sin peso"
-
-    card_html = f"""
+    fase_badge = f'<span class="badge" style="margin-left:0.3rem">{fase}</span>' if fase else ""
+    return f"""
     <div class="reptile-card {selected_class}">
-        <h3>🐍 {name}</h3>
-        <p class="meta">{species} • {weight_text}</p>
+        <h3>{name}</h3>
+        <p class="meta">{species} | {weight_text}</p>
         {badge}
-        {f'<span class="badge" style="margin-left:0.3rem">{fase}</span>' if fase else ''}
+        {fase_badge}
     </div>
     """
-    return card_html
 
-# ============================================================
-# STEPPER PARA FORMULARIOS
-# ============================================================
 def render_stepper(current_step, total_steps, labels):
     html = '<div class="stepper">'
     for i in range(1, total_steps + 1):
@@ -849,215 +782,231 @@ def render_stepper(current_step, total_steps, labels):
     html += '</div>'
     st.markdown(html, unsafe_allow_html=True)
 
-# ============================================================
-# METRICS GRID
-# ============================================================
 def render_metric_grid(metrics):
-    """metrics: lista de dicts con 'label', 'value', 'status' (opt)"""
     html = '<div class="metric-grid">'
     for m in metrics:
-        status = m.get('status', '')
+        status = m.get("status", "")
         html += f"""
         <div class="metric-card {status}">
-            <div class="label">{m['label']}</div>
-            <div class="value">{m['value']}</div>
+            <div class="label">{m["label"]}</div>
+            <div class="value">{m["value"]}</div>
         </div>
         """
     html += '</div>'
     st.markdown(html, unsafe_allow_html=True)
 
 # ============================================================
+# LOGIN SCREEN
+# ============================================================
+if not st.session_state.authenticated:
+    st.markdown("""
+    <div class="login-screen">
+        <div class="login-logo">🦎</div>
+        <div class="login-title">RIARE Exotic's</div>
+        <div class="login-subtitle">Gestion profesional de reptiles</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.container():
+        username = st.text_input("Nombre de Propietario", 
+                                placeholder="Tu nombre", 
+                                label_visibility="collapsed",
+                                key="login_user")
+
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            if st.button("Ingresar", use_container_width=True, type="primary"):
+                if username.strip():
+                    st.session_state.authenticated = True
+                    st.session_state.username = username.strip()
+                    st.rerun()
+                else:
+                    st.error("Introduce tu nombre")
+    st.stop()
+
+# ============================================================
 # CONTENIDO PRINCIPAL
 # ============================================================
 st.markdown('<div class="main-content">', unsafe_allow_html=True)
 
-# ---- PÁGINA: DASHBOARD ----
+# ---- PAGINA: DASHBOARD ----
 if st.session_state.current_page == "dashboard":
-    render_header("📊 Panel de Control")
+    render_header("Panel de Control")
 
     reptiles = get_reptiles(st.session_state.username)
 
     if not reptiles:
-        st.info("🦎 No tienes ejemplares registrados. Toca ➕ para agregar uno.")
+        st.info("No tienes ejemplares registrados. Toca + para agregar uno.")
     else:
-        # Quick stats scrollable
         total = len(reptiles)
-        species_count = len(set(r.get('species', '') for r in reptiles))
+        species_count = len(set(r.get("species", "") for r in reptiles))
 
         st.markdown(f"""
         <div class="quick-stats">
-            <div class="quick-stat-pill">🦎 <strong>{total}</strong> ejemplares</div>
-            <div class="quick-stat-pill">🔬 <strong>{species_count}</strong> especies</div>
-            <div class="quick-stat-pill">👤 {st.session_state.username}</div>
+            <div class="quick-stat-pill">{total} ejemplares</div>
+            <div class="quick-stat-pill">{species_count} especies</div>
+            <div class="quick-stat-pill">{st.session_state.username}</div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("🦎 Últimos ejemplares")
+        st.subheader("Ultimos ejemplares")
 
-        # Mostrar cards de reptiles (máximo 4 en dashboard)
         for reptile in reptiles[:4]:
-            is_selected = st.session_state.selected_reptile == reptile['unique_id']
+            is_selected = st.session_state.selected_reptile == reptile["unique_id"]
             st.markdown(render_reptile_card(reptile, is_selected), unsafe_allow_html=True)
 
-            # Botón invisible encima del card para capturar click
             if st.button(f"Ver {reptile.get('name', 'Reptil')}", 
                         key=f"dash_btn_{reptile['unique_id']}",
                         use_container_width=True):
-                st.session_state.selected_reptile = reptile['unique_id']
+                st.session_state.selected_reptile = reptile["unique_id"]
                 st.session_state.current_page = "reptiles"
                 st.rerun()
 
         if len(reptiles) > 4:
-            if st.button("Ver todos mis reptiles →", use_container_width=True):
+            if st.button("Ver todos mis reptiles", use_container_width=True):
                 st.session_state.current_page = "reptiles"
                 st.rerun()
 
-        # Alertas rápidas
-        st.subheader("🔔 Alertas")
+        st.subheader("Alertas")
         alertas = []
         for r in reptiles:
-            alim = get_events("alimentacion", r['unique_id'])
+            alim = get_events("alimentacion", r["unique_id"])
             if alim and len(alim) > 0:
-                dias = safe_days_between(alim[0].get('fecha'))
+                dias = safe_days_between(alim[0].get("fecha"))
                 if dias and dias > 10:
-                    alertas.append(f"⚠️ **{r.get('name')}** lleva {dias} días sin comer")
+                    alertas.append(f"{r.get('name')} lleva {dias} dias sin comer")
 
         if alertas:
             for alerta in alertas[:3]:
                 st.warning(alerta)
         else:
-            st.success("✅ Todo en orden. Sin alertas pendientes.")
+            st.success("Todo en orden. Sin alertas pendientes.")
 
-# ---- PÁGINA: MIS REPTILES ----
+# ---- PAGINA: MIS REPTILES ----
 elif st.session_state.current_page == "reptiles":
-    search = render_header("🦎 Mis Reptiles", show_search=True)
+    search = render_header("Mis Reptiles", show_search=True)
 
     reptiles = get_reptiles(st.session_state.username)
 
     if not reptiles:
-        st.info("No hay ejemplares. Toca ➕ para agregar uno.")
+        st.info("No hay ejemplares. Toca + para agregar uno.")
     else:
-        # Filtrar por búsqueda
-        filtered = [r for r in reptiles if search.lower() in r.get('name','').lower() 
-                    or search.lower() in r.get('species','').lower()] if search else reptiles
+        filtered = [r for r in reptiles if search.lower() in r.get("name","").lower() 
+                    or search.lower() in r.get("species","").lower()] if search else reptiles
 
         if not filtered:
-            st.info("🔍 No se encontraron resultados")
+            st.info("No se encontraron resultados")
         else:
             for reptile in filtered:
-                is_selected = st.session_state.selected_reptile == reptile['unique_id']
+                is_selected = st.session_state.selected_reptile == reptile["unique_id"]
                 st.markdown(render_reptile_card(reptile, is_selected), unsafe_allow_html=True)
 
                 if st.button(f"Seleccionar {reptile.get('name', 'Reptil')}", 
                             key=f"rept_btn_{reptile['unique_id']}",
                             use_container_width=True):
-                    st.session_state.selected_reptile = reptile['unique_id']
+                    st.session_state.selected_reptile = reptile["unique_id"]
                     st.rerun()
 
-            # Si hay seleccionado, mostrar detalle
             if st.session_state.selected_reptile:
-                selected = next((r for r in reptiles if r['unique_id'] == st.session_state.selected_reptile), None)
+                selected = next((r for r in reptiles if r["unique_id"] == st.session_state.selected_reptile), None)
                 if selected:
                     st.divider()
-                    st.subheader(f"📋 {selected.get('name', 'Reptil')}")
+                    st.subheader(f"{selected.get('name', 'Reptil')}")
 
-                    # Métricas
-                    species_info = get_species_info(selected.get('species', ''), safe_int(selected.get('peso')))
-                    alim = get_events("alimentacion", selected['unique_id'])
-                    muda = get_events("muda", selected['unique_id'])
-                    peso_hist = get_peso_history(selected['unique_id'])
+                    species_info = get_species_info(selected.get("species", ""), safe_int(selected.get("peso")))
+                    alim = get_events("alimentacion", selected["unique_id"])
+                    muda = get_events("muda", selected["unique_id"])
+                    peso_hist = get_peso_history(selected["unique_id"])
 
-                    dias_alim = safe_days_between(alim[0].get('fecha')) if alim else None
-                    dias_muda = safe_days_between(muda[0].get('fecha')) if muda else None
+                    dias_alim = safe_days_between(alim[0].get("fecha")) if alim else None
+                    dias_muda = safe_days_between(muda[0].get("fecha")) if muda else None
 
                     metrics = [
                         {"label": "Peso", "value": f"{safe_int(selected.get('peso'))}g"},
-                        {"label": "Alimentación", "value": f"Hace {dias_alim}d" if dias_alim is not None else "Sin datos", 
+                        {"label": "Alimentacion", "value": f"Hace {dias_alim}d" if dias_alim is not None else "Sin datos",
                          "status": "warning" if dias_alim and dias_alim > 10 else ""},
                         {"label": "Muda", "value": f"Hace {dias_muda}d" if dias_muda is not None else "Sin datos"},
-                        {"label": "Especie", "value": selected.get('species', 'N/A')[:10]}
+                        {"label": "Especie", "value": selected.get("species", "N/A")[:10]}
                     ]
                     render_metric_grid(metrics)
 
-                    # Tabs de detalle
-                    tabs = st.tabs(["🍽️ Alim", "🔄 Muda", "⚖️ Peso", "🏥 Vet"])
+                    tabs = st.tabs(["Alim", "Muda", "Peso", "Vet"])
 
                     with tabs[0]:
                         if alim:
                             df = pd.DataFrame(alim[:5])
-                            df['días'] = df['fecha'].apply(lambda x: safe_days_between(x))
-                            st.dataframe(df[['fecha', 'tipo_alimento', 'días']], use_container_width=True, hide_index=True)
+                            df["dias"] = df["fecha"].apply(lambda x: safe_days_between(x))
+                            st.dataframe(df[["fecha", "tipo_alimento", "dias"]], use_container_width=True, hide_index=True)
                         else:
                             st.info("Sin registros")
 
                     with tabs[1]:
                         if muda:
                             df = pd.DataFrame(muda[:5])
-                            df['días'] = df['fecha'].apply(lambda x: safe_days_between(x))
-                            st.dataframe(df[['fecha', 'comentarios', 'días']], use_container_width=True, hide_index=True)
+                            df["dias"] = df["fecha"].apply(lambda x: safe_days_between(x))
+                            st.dataframe(df[["fecha", "comentarios", "dias"]], use_container_width=True, hide_index=True)
                         else:
                             st.info("Sin registros")
 
                     with tabs[2]:
                         if peso_hist and len(peso_hist) > 1:
                             df = pd.DataFrame(peso_hist)
-                            df['fecha'] = pd.to_datetime(df['fecha'])
-                            fig = px.line(df, x='fecha', y='peso', 
-                                        title='Evolución de peso',
-                                        template='plotly_dark')
+                            df["fecha"] = pd.to_datetime(df["fecha"])
+                            fig = px.line(df, x="fecha", y="peso",
+                                        title="Evolucion de peso",
+                                        template="plotly_dark")
                             fig.update_layout(margin=dict(l=20, r=20, t=40, b=20),
-                                            paper_bgcolor='rgba(0,0,0,0)',
-                                            plot_bgcolor='rgba(0,0,0,0)')
-                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                                            paper_bgcolor="rgba(0,0,0,0)",
+                                            plot_bgcolor="rgba(0,0,0,0)")
+                            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
                         else:
-                            st.info("Registra pesos para ver evolución")
+                            st.info("Registra pesos para ver evolucion")
 
                     with tabs[3]:
-                        vet = get_events("veterinario", selected['unique_id'])
+                        vet = get_events("veterinario", selected["unique_id"])
                         if vet:
                             df = pd.DataFrame(vet[:5])
-                            st.dataframe(df[['fecha', 'evaluacion_medica']], use_container_width=True, hide_index=True)
+                            st.dataframe(df[["fecha", "evaluacion_medica"]], use_container_width=True, hide_index=True)
                         else:
                             st.info("Sin registros")
 
-                    # Acciones rápidas
-                    st.subheader("⚡ Acciones rápidas")
+                    st.subheader("Acciones rapidas")
                     col1, col2, col3 = st.columns(3)
                     with col1:
-                        if st.button("🍽️ Alimentar", use_container_width=True):
+                        if st.button("Alimentar", use_container_width=True):
                             st.session_state.current_page = "add"
                             st.session_state.add_type = "alimentacion"
                             st.rerun()
                     with col2:
-                        if st.button("⚖️ Pesar", use_container_width=True):
+                        if st.button("Pesar", use_container_width=True):
                             st.session_state.current_page = "add"
                             st.session_state.add_type = "peso"
                             st.rerun()
                     with col3:
-                        if st.button("🔄 Muda", use_container_width=True):
+                        if st.button("Muda", use_container_width=True):
                             st.session_state.current_page = "add"
                             st.session_state.add_type = "muda"
                             st.rerun()
 
-# ---- PÁGINA: AGREGAR (CON STEPPER) ----
+# ---- PAGINA: AGREGAR ----
 elif st.session_state.current_page == "add":
     add_type = st.session_state.get("add_type", "reptil")
 
     if add_type == "reptil":
-        render_header("➕ Nuevo Ejemplar")
+        render_header("Nuevo Ejemplar")
         render_stepper(st.session_state.step, 3, ["Datos", "Detalles", "Confirmar"])
 
         with st.form("new_reptile_step"):
             if st.session_state.step == 1:
-                name = st.text_input("📛 Nombre *", placeholder="Ej: Medusa")
-                species = st.selectbox("🔬 Especie *", list(SPECIES_DB.keys()) + ["Otra"])
+                name = st.text_input("Nombre *", placeholder="Ej: Medusa")
+                species = st.selectbox("Especie *", list(SPECIES_DB.keys()) + ["Otra"])
                 if species == "Otra":
                     species = st.text_input("Especifica la especie")
-                sex = st.selectbox("⚥ Sexo", ["Macho", "Hembra", "Desconocido"])
+                sex = st.selectbox("Sexo", ["Macho", "Hembra", "Desconocido"])
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("Siguiente →", use_container_width=True):
+                    if st.form_submit_button("Siguiente", use_container_width=True):
                         if name and species:
                             st.session_state.temp_reptile = {"name": name, "species": species, "sex": sex}
                             st.session_state.step = 2
@@ -1065,25 +1014,25 @@ elif st.session_state.current_page == "add":
                         else:
                             st.error("Nombre y especie son obligatorios")
                 with col2:
-                    if st.form_submit_button("Cancelar", use_container_width=True, type="secondary"):
+                    if st.form_submit_button("Cancelar", use_container_width=True):
                         st.session_state.step = 1
                         st.session_state.current_page = "dashboard"
                         st.rerun()
 
             elif st.session_state.step == 2:
                 temp = st.session_state.get("temp_reptile", {})
-                fase = st.text_input("🧬 Fase / Gen (opcional)", placeholder="Ej: Albino, Pastel")
-                pedimento = st.text_input("📄 Pedimento (opcional)")
-                peso = st.number_input("⚖️ Peso inicial (g)", min_value=0, step=50)
-                notas = st.text_area("📝 Notas")
+                fase = st.text_input("Fase / Gen (opcional)", placeholder="Ej: Albino, Pastel")
+                pedimento = st.text_input("Pedimento (opcional)")
+                peso = st.number_input("Peso inicial (g)", min_value=0, step=50)
+                notas = st.text_area("Notas")
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("← Anterior", use_container_width=True):
+                    if st.form_submit_button("Anterior", use_container_width=True):
                         st.session_state.step = 1
                         st.rerun()
                 with col2:
-                    if st.form_submit_button("Siguiente →", use_container_width=True):
+                    if st.form_submit_button("Siguiente", use_container_width=True):
                         temp.update({"fase": fase, "pedimento": pedimento, "peso": int(peso), "notas": notas})
                         st.session_state.temp_reptile = temp
                         st.session_state.step = 3
@@ -1092,29 +1041,29 @@ elif st.session_state.current_page == "add":
             elif st.session_state.step == 3:
                 temp = st.session_state.get("temp_reptile", {})
                 st.write("**Resumen:**")
-                st.write(f"📛 Nombre: {temp.get('name')}")
-                st.write(f"🔬 Especie: {temp.get('species')}")
-                st.write(f"⚥ Sexo: {temp.get('sex')}")
-                st.write(f"⚖️ Peso: {temp.get('peso', 0)}g")
+                st.write(f"Nombre: {temp.get('name')}")
+                st.write(f"Especie: {temp.get('species')}")
+                st.write(f"Sexo: {temp.get('sex')}")
+                st.write(f"Peso: {temp.get('peso', 0)}g")
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("← Anterior", use_container_width=True):
+                    if st.form_submit_button("Anterior", use_container_width=True):
                         st.session_state.step = 2
                         st.rerun()
                 with col2:
-                    if st.form_submit_button("💾 Guardar", use_container_width=True):
+                    if st.form_submit_button("Guardar", use_container_width=True):
                         u_id = f"{temp['species'][:2].upper()}{random.randint(1000,9999)}"
                         data = {
-                            "name": temp.get('name'),
-                            "species": temp.get('species'),
+                            "name": temp.get("name"),
+                            "species": temp.get("species"),
                             "owner_name": st.session_state.username,
-                            "sex": temp.get('sex'),
+                            "sex": temp.get("sex"),
                             "unique_id": u_id,
-                            "pedimento": temp.get('pedimento', ''),
-                            "peso": temp.get('peso', 0),
-                            "notas": temp.get('notas', ''),
-                            "fase": temp.get('fase', '')
+                            "pedimento": temp.get("pedimento", ""),
+                            "peso": temp.get("peso", 0),
+                            "notas": temp.get("notas", ""),
+                            "fase": temp.get("fase", "")
                         }
                         try:
                             supabase.table("reptiles").insert(data).execute()
@@ -1123,40 +1072,39 @@ elif st.session_state.current_page == "add":
                             st.session_state.selected_reptile = u_id
                             st.session_state.current_page = "reptiles"
                             st.cache_data.clear()
-                            st.success(f"✅ {temp.get('name')} registrado!")
+                            st.success(f"{temp.get('name')} registrado!")
                             time.sleep(1)
                             st.rerun()
                         except Exception as e:
                             st.error(f"Error: {e}")
 
     elif add_type == "alimentacion":
-        render_header("🍽️ Alimentación")
+        render_header("Alimentacion")
         reptiles = get_reptiles(st.session_state.username)
 
         if not reptiles:
             st.warning("Primero registra un ejemplar")
         else:
-            # Selector de reptil con cards
             st.subheader("Selecciona un ejemplar")
             for r in reptiles[:5]:
                 if st.button(f"{r.get('name')} ({r.get('species')})", 
                            key=f"feed_sel_{r['unique_id']}", use_container_width=True):
-                    st.session_state.feed_reptile = r['unique_id']
+                    st.session_state.feed_reptile = r["unique_id"]
                     st.rerun()
 
             feed_id = st.session_state.get("feed_reptile")
             if feed_id:
-                reptile = next((r for r in reptiles if r['unique_id'] == feed_id), None)
+                reptile = next((r for r in reptiles if r["unique_id"] == feed_id), None)
                 if reptile:
-                    species_info = get_species_info(reptile.get('species'))
-                    alimentos = species_info.get('alimentos_sugeridos', ["Otro"])
+                    species_info = get_species_info(reptile.get("species"))
+                    alimentos = species_info.get("alimentos_sugeridos", ["Otro"])
 
                     with st.form("feed_form"):
-                        st.markdown(f"**Registrando alimentación para: {reptile.get('name')}**")
-                        fecha = st.date_input("📅 Fecha", value=datetime.now())
-                        tipo = st.selectbox("🍗 Alimento", alimentos)
-                        peso_alim = st.number_input("⚖️ Peso (g)", min_value=0, step=5)
-                        notas = st.text_area("📝 Notas")
+                        st.markdown(f"**Registrando alimentacion para: {reptile.get('name')}**")
+                        fecha = st.date_input("Fecha", value=datetime.now())
+                        tipo = st.selectbox("Alimento", alimentos)
+                        peso_alim = st.number_input("Peso (g)", min_value=0, step=5)
+                        notas = st.text_area("Notas")
 
                         col1, col2 = st.columns(2)
                         with col1:
@@ -1164,7 +1112,7 @@ elif st.session_state.current_page == "add":
                                 st.session_state.feed_reptile = None
                                 st.rerun()
                         with col2:
-                            if st.form_submit_button("💾 Guardar", use_container_width=True):
+                            if st.form_submit_button("Guardar", use_container_width=True):
                                 data = {
                                     "unique_id": feed_id,
                                     "owner_name": st.session_state.username,
@@ -1176,14 +1124,14 @@ elif st.session_state.current_page == "add":
                                     supabase.table("alimentacion").insert(data).execute()
                                     st.session_state.feed_reptile = None
                                     st.cache_data.clear()
-                                    st.success("✅ Registrado!")
+                                    st.success("Registrado!")
                                     time.sleep(1)
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"Error: {e}")
 
     elif add_type == "peso":
-        render_header("⚖️ Registro de Peso")
+        render_header("Registro de Peso")
         reptiles = get_reptiles(st.session_state.username)
 
         if not reptiles:
@@ -1191,22 +1139,22 @@ elif st.session_state.current_page == "add":
         else:
             st.subheader("Selecciona un ejemplar")
             for r in reptiles[:5]:
-                current = safe_int(r.get('peso'))
+                current = safe_int(r.get("peso"))
                 if st.button(f"{r.get('name')} (Actual: {current}g)", 
                            key=f"weight_sel_{r['unique_id']}", use_container_width=True):
-                    st.session_state.weight_reptile = r['unique_id']
+                    st.session_state.weight_reptile = r["unique_id"]
                     st.rerun()
 
             weight_id = st.session_state.get("weight_reptile")
             if weight_id:
-                reptile = next((r for r in reptiles if r['unique_id'] == weight_id), None)
+                reptile = next((r for r in reptiles if r["unique_id"] == weight_id), None)
                 if reptile:
-                    current = safe_int(reptile.get('peso'))
+                    current = safe_int(reptile.get("peso"))
                     with st.form("weight_form"):
                         st.markdown(f"**{reptile.get('name')}** - Peso actual: {current}g")
-                        fecha = st.date_input("📅 Fecha", value=datetime.now())
-                        nuevo = st.number_input("⚖️ Nuevo peso (g)", min_value=0, step=10, value=current)
-                        notas = st.text_area("📝 Notas")
+                        fecha = st.date_input("Fecha", value=datetime.now())
+                        nuevo = st.number_input("Nuevo peso (g)", min_value=0, step=10, value=current)
+                        notas = st.text_area("Notas")
 
                         col1, col2 = st.columns(2)
                         with col1:
@@ -1214,7 +1162,7 @@ elif st.session_state.current_page == "add":
                                 st.session_state.weight_reptile = None
                                 st.rerun()
                         with col2:
-                            if st.form_submit_button("💾 Guardar", use_container_width=True):
+                            if st.form_submit_button("Guardar", use_container_width=True):
                                 try:
                                     supabase.table("peso").insert({
                                         "unique_id": weight_id,
@@ -1226,14 +1174,14 @@ elif st.session_state.current_page == "add":
                                     supabase.table("reptiles").update({"peso": int(nuevo)}).eq("unique_id", weight_id).execute()
                                     st.session_state.weight_reptile = None
                                     st.cache_data.clear()
-                                    st.success("✅ Peso actualizado!")
+                                    st.success("Peso actualizado!")
                                     time.sleep(1)
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"Error: {e}")
 
     elif add_type == "muda":
-        render_header("🔄 Registrar Muda")
+        render_header("Registrar Muda")
         reptiles = get_reptiles(st.session_state.username)
 
         if not reptiles:
@@ -1243,17 +1191,17 @@ elif st.session_state.current_page == "add":
             for r in reptiles[:5]:
                 if st.button(f"{r.get('name')} ({r.get('species')})", 
                            key=f"shed_sel_{r['unique_id']}", use_container_width=True):
-                    st.session_state.shed_reptile = r['unique_id']
+                    st.session_state.shed_reptile = r["unique_id"]
                     st.rerun()
 
             shed_id = st.session_state.get("shed_reptile")
             if shed_id:
-                reptile = next((r for r in reptiles if r['unique_id'] == shed_id), None)
+                reptile = next((r for r in reptiles if r["unique_id"] == shed_id), None)
                 if reptile:
                     with st.form("shed_form"):
                         st.markdown(f"**{reptile.get('name')}**")
-                        fecha = st.date_input("📅 Fecha", value=datetime.now())
-                        comentarios = st.text_area("📝 Observaciones")
+                        fecha = st.date_input("Fecha", value=datetime.now())
+                        comentarios = st.text_area("Observaciones")
 
                         col1, col2 = st.columns(2)
                         with col1:
@@ -1261,7 +1209,7 @@ elif st.session_state.current_page == "add":
                                 st.session_state.shed_reptile = None
                                 st.rerun()
                         with col2:
-                            if st.form_submit_button("💾 Guardar", use_container_width=True):
+                            if st.form_submit_button("Guardar", use_container_width=True):
                                 try:
                                     supabase.table("muda").insert({
                                         "unique_id": shed_id,
@@ -1271,38 +1219,37 @@ elif st.session_state.current_page == "add":
                                     }).execute()
                                     st.session_state.shed_reptile = None
                                     st.cache_data.clear()
-                                    st.success("✅ Muda registrada!")
+                                    st.success("Muda registrada!")
                                     time.sleep(1)
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"Error: {e}")
 
     else:
-        # Menú de selección de tipo
-        render_header("➕ ¿Qué deseas registrar?")
+        render_header("Que deseas registrar?")
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🦎 Nuevo Reptil", use_container_width=True):
+            if st.button("Nuevo Reptil", use_container_width=True):
                 st.session_state.add_type = "reptil"
                 st.rerun()
-            if st.button("🍽️ Alimentación", use_container_width=True):
+            if st.button("Alimentacion", use_container_width=True):
                 st.session_state.add_type = "alimentacion"
                 st.rerun()
         with col2:
-            if st.button("⚖️ Peso", use_container_width=True):
+            if st.button("Peso", use_container_width=True):
                 st.session_state.add_type = "peso"
                 st.rerun()
-            if st.button("🔄 Muda", use_container_width=True):
+            if st.button("Muda", use_container_width=True):
                 st.session_state.add_type = "muda"
                 st.rerun()
-        if st.button("🏥 Veterinario", use_container_width=True):
+        if st.button("Veterinario", use_container_width=True):
             st.session_state.add_type = "veterinario"
             st.rerun()
 
-# ---- PÁGINA: ESTADÍSTICAS ----
+# ---- PAGINA: ESTADISTICAS ----
 elif st.session_state.current_page == "stats":
-    render_header("📊 Estadísticas")
+    render_header("Estadisticas")
     reptiles = get_reptiles(st.session_state.username)
 
     if not reptiles:
@@ -1311,43 +1258,40 @@ elif st.session_state.current_page == "stats":
         total = len(reptiles)
         st.metric("Total de ejemplares", total)
 
-        # Gráfico de especies
         df_species = pd.DataFrame(reptiles)
-        if 'species' in df_species.columns:
-            counts = df_species['species'].value_counts().reset_index()
-            counts.columns = ['Especie', 'Cantidad']
-            fig = px.bar(counts, x='Especie', y='Cantidad', 
-                        color='Cantidad', color_continuous_scale='Greens',
-                        template='plotly_dark')
-            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        if "species" in df_species.columns:
+            counts = df_species["species"].value_counts().reset_index()
+            counts.columns = ["Especie", "Cantidad"]
+            fig = px.bar(counts, x="Especie", y="Cantidad",
+                        color="Cantidad", color_continuous_scale="Greens",
+                        template="plotly_dark")
+            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                             margin=dict(l=20, r=20, t=40, b=20))
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-        # Gráfico de sexo
-        if 'sex' in df_species.columns:
-            sex_counts = df_species['sex'].value_counts().reset_index()
-            sex_counts.columns = ['Sexo', 'Cantidad']
-            fig2 = px.pie(sex_counts, names='Sexo', values='Cantidad', 
-                         hole=0.4, template='plotly_dark')
-            fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', 
+        if "sex" in df_species.columns:
+            sex_counts = df_species["sex"].value_counts().reset_index()
+            sex_counts.columns = ["Sexo", "Cantidad"]
+            fig2 = px.pie(sex_counts, names="Sexo", values="Cantidad",
+                         hole=0.4, template="plotly_dark")
+            fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)",
                              margin=dict(l=20, r=20, t=40, b=20))
-            st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
 
-# ---- PÁGINA: AJUSTES ----
+# ---- PAGINA: AJUSTES ----
 elif st.session_state.current_page == "settings":
-    render_header("⚙️ Configuración")
+    render_header("Configuracion")
 
-    # Tabs para organizar
-    tab1, tab2, tab3 = st.tabs(["🔊 Notificaciones", "👤 Cuenta", "ℹ️ Info"])
+    tab1, tab2, tab3 = st.tabs(["Notificaciones", "Cuenta", "Info"])
 
     with tab1:
         config = obtener_config_usuario(st.session_state.username)
 
-        st.subheader("🔊 Alexa (Voice Monkey)")
+        st.subheader("Alexa (Voice Monkey)")
         if config.get("token_voice_monkey"):
-            st.success("✅ Configurado")
-            if st.button("🗑️ Eliminar token"):
-                if st.checkbox("¿Confirmar eliminación?"):
+            st.success("Configurado")
+            if st.button("Eliminar token"):
+                if st.checkbox("Confirmar eliminacion?"):
                     guardar_config_usuario(st.session_state.username, token_voice_monkey=None)
                     st.rerun()
         else:
@@ -1355,28 +1299,27 @@ elif st.session_state.current_page == "settings":
 
         with st.form("token_form"):
             token = st.text_input("Token de Voice Monkey", type="password")
-            if st.form_submit_button("💾 Guardar"):
+            if st.form_submit_button("Guardar"):
                 if token:
                     guardar_config_usuario(st.session_state.username, token_voice_monkey=token)
                     st.success("Token guardado")
                     st.rerun()
 
-        st.subheader("🏠 Home Assistant")
+        st.subheader("Home Assistant")
         if config.get("webhook_ha"):
-            st.success("✅ Configurado")
+            st.success("Configurado")
         else:
             st.info("No configurado")
 
         with st.form("webhook_form"):
             webhook = st.text_input("URL del Webhook")
-            if st.form_submit_button("💾 Guardar"):
+            if st.form_submit_button("Guardar"):
                 if webhook:
                     guardar_config_usuario(st.session_state.username, webhook_ha=webhook)
                     st.success("Webhook guardado")
                     st.rerun()
 
-        # Test
-        st.subheader("🧪 Probar notificaciones")
+        st.subheader("Probar notificaciones")
         if st.button("Enviar prueba", use_container_width=True):
             msg = "Prueba desde RIARE Exotic's"
             r1 = enviar_notificacion_alexa(msg, st.session_state.username)
@@ -1386,7 +1329,7 @@ elif st.session_state.current_page == "settings":
 
     with tab2:
         st.write(f"**Usuario:** {st.session_state.username}")
-        if st.button("🚪 Cerrar Sesión", use_container_width=True):
+        if st.button("Cerrar Sesion", use_container_width=True):
             st.session_state.authenticated = False
             st.session_state.selected_reptile = None
             st.rerun()
@@ -1395,26 +1338,26 @@ elif st.session_state.current_page == "settings":
         st.markdown("""
         **RIARE Exotic's v4.0**
 
-        Sistema de gestión herpetológica optimizado para móvil.
+        Sistema de gestion herpetologica optimizado para movil.
 
         Funciones:
-        • Registro de reptiles con pasos guiados
-        • Control de alimentación, peso y muda
-        • Notificaciones a Alexa y Home Assistant
-        • Estadísticas visuales
-        • Interfaz adaptativa
+        - Registro de reptiles con pasos guiados
+        - Control de alimentacion, peso y muda
+        - Notificaciones a Alexa y Home Assistant
+        - Estadisticas visuales
+        - Interfaz adaptativa
         """)
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 # ============================================================
-# BOTTOM NAVIGATION (RENDER AL FINAL PARA QUE ESTÉ ARRIBA EN Z-INDEX)
+# BOTTOM NAVIGATION - BOTONES STREAMLIT NATIVOS
 # ============================================================
-# Usamos botones de Streamlit en lugar de HTML puro para que funcionen
 st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
 
-cols = st.columns(5)
-pages = [
+# Usamos columnas con botones nativos de Streamlit (funcionan 100%)
+nav_cols = st.columns(5)
+nav_items = [
     ("dashboard", "🏠", "Inicio"),
     ("reptiles", "🦎", "Reptiles"),
     ("add", "➕", "Agregar"),
@@ -1422,13 +1365,14 @@ pages = [
     ("settings", "⚙️", "Ajustes")
 ]
 
-for i, (page_id, icon, label) in enumerate(pages):
-    with cols[i]:
-        active_style = "primary" if st.session_state.current_page == page_id else "secondary"
-        if st.button(f"{icon}", key=f"nav_{page_id}", use_container_width=True, type=active_style):
+for i, (page_id, icon, label) in enumerate(nav_items):
+    with nav_cols[i]:
+        is_active = st.session_state.current_page == page_id
+        btn_type = "primary" if is_active else "secondary"
+        if st.button(icon, key=f"nav_{page_id}", use_container_width=True, type=btn_type):
             st.session_state.current_page = page_id
             if page_id == "add":
                 st.session_state.add_type = "menu"
                 st.session_state.step = 1
             st.rerun()
-        st.caption(label, unsafe_allow_html=True)
+        st.caption(label)
