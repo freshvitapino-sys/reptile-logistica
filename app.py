@@ -8,549 +8,526 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import requests
 import re
+import time
 
-# ---------- CONFIGURACIÓN DE PÁGINA ----------
+# ============================================================
+# CONFIGURACIÓN DE PÁGINA - OPTIMIZADA PARA MÓVIL
+# ============================================================
 st.set_page_config(
     page_title="RIARE Exotic's",
     page_icon="🦎",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"  # Sidebar colapsado por defecto en móvil
 )
 
-# ---------- ESTILOS CSS (TEMA OSCURO + MOVIL) ----------
+# ============================================================
+# CSS OPTIMIZADO - MOBILE-FIRST CON PATRONES NATIVOS
+# ============================================================
 st.markdown("""
 <style>
-    .stApp { background-color: #0e1117; padding: 0.5rem; }
-    .css-1d391kg, .stSidebar { background-color: #1e2229; }
-    .stAlert, .stForm, .stSelectbox, .stTextInput, .stNumberInput, .stDataFrame, .stMarkdown {
-        background-color: #262b33;
-        border-radius: 12px;
+    /* ===== RESET Y BASE ===== */
+    .stApp { 
+        background: linear-gradient(180deg, #0a0e14 0%, #121820 100%);
+        padding: 0 !important;
+    }
+
+    /* Ocultar header de Streamlit en móvil */
+    header[data-testid="stHeader"] { display: none !important; }
+
+    /* ===== TIPOGRAFÍA RESPONSIVA ===== */
+    html { font-size: 16px; }
+    @media (max-width: 480px) { html { font-size: 15px; } }
+
+    /* ===== CARDS TÁCTILES ===== */
+    .reptile-card {
+        background: linear-gradient(145deg, #1e2430, #252b3a);
+        border-radius: 16px;
         padding: 1.2rem;
-        margin-bottom: 1rem;
-        color: #eaeef2;
-        font-size: 1rem;
+        margin-bottom: 0.8rem;
+        border: 1px solid #2a3444;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        transition: all 0.2s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
     }
-    div[data-testid="metric-container"] {
-        background-color: #1e2229;
-        border-radius: 12px;
-        padding: 1rem;
-        border-left: 5px solid #4caf50;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        margin-bottom: 0.5rem;
+    .reptile-card:active {
+        transform: scale(0.97);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
-    div[data-testid="metric-container"] label { color: #b0bec5 !important; font-size: 0.9rem !important; }
-    div[data-testid="metric-container"] div { color: #ffffff !important; font-size: 1.4rem !important; }
-    .stButton > button {
-        background-color: #4caf50;
+    .reptile-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: #4caf50;
+        border-radius: 16px 0 0 16px;
+    }
+    .reptile-card.selected {
+        border-color: #4caf50;
+        background: linear-gradient(145deg, #1a2f1e, #1e3a25);
+        box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);
+    }
+    .reptile-card h3 {
+        margin: 0 0 0.3rem 0;
+        font-size: 1.1rem;
+        color: #ffffff !important;
+    }
+    .reptile-card .meta {
+        color: #8b9bb4;
+        font-size: 0.85rem;
+        margin: 0;
+    }
+    .reptile-card .badge {
+        display: inline-block;
+        background: #2a3444;
+        color: #4caf50;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+        font-weight: 600;
+    }
+
+    /* ===== BOTTOM NAVIGATION BAR ===== */
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(18, 24, 32, 0.95);
+        backdrop-filter: blur(20px);
+        border-top: 1px solid #2a3444;
+        display: flex;
+        justify-content: space-around;
+        padding: 0.5rem 0;
+        z-index: 9999;
+        padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+    }
+    .bottom-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.3rem 1rem;
+        color: #5a6a7a;
+        text-decoration: none;
+        font-size: 0.7rem;
+        transition: color 0.2s;
+        border: none;
+        background: none;
+        cursor: pointer;
+    }
+    .bottom-nav-item.active {
+        color: #4caf50;
+    }
+    .bottom-nav-item .icon {
+        font-size: 1.4rem;
+        margin-bottom: 0.2rem;
+    }
+
+    /* ===== FLOATING ACTION BUTTON ===== */
+    .fab {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4caf50, #2e7d32);
         color: white;
         border: none;
-        border-radius: 12px;
-        padding: 0.8rem 1.2rem;
-        font-weight: bold;
-        font-size: 1.1rem;
-        transition: 0.3s;
-        width: 100%;
-        min-height: 50px;
-    }
-    .stButton > button:hover { background-color: #388e3c; color: white; }
-    .ejemplar-btn {
-        background-color: #2a2f39;
-        color: #eaeef2;
-        border: 2px solid #3a4050;
-        border-radius: 12px;
-        padding: 0.8rem;
-        margin: 0.3rem 0;
-        font-weight: bold;
-        text-align: center;
-        transition: 0.3s;
+        font-size: 1.5rem;
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
         cursor: pointer;
-        font-size: 0.95rem;
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s, box-shadow 0.2s;
     }
-    .ejemplar-btn:hover { background-color: #3a4050; border-color: #4caf50; }
-    .ejemplar-btn-seleccionado {
-        background-color: #4caf50;
+    .fab:active {
+        transform: scale(0.9);
+        box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    }
+
+    /* ===== TOAST NOTIFICATIONS ===== */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10000;
+        width: 90%;
+        max-width: 400px;
+    }
+    .toast {
+        background: #1e2430;
+        border-left: 4px solid #4caf50;
+        border-radius: 12px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        animation: slideDown 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+    .toast.error { border-left-color: #f44336; }
+    .toast.warning { border-left-color: #ff9800; }
+    .toast.info { border-left-color: #2196f3; }
+    @keyframes slideDown {
+        from { transform: translateY(-20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ===== SKELETON LOADING ===== */
+    .skeleton {
+        background: linear-gradient(90deg, #1e2430 25%, #2a3444 50%, #1e2430 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 8px;
+    }
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    /* ===== STEPPER FORMS ===== */
+    .stepper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        padding: 0 1rem;
+    }
+    .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+    }
+    .step-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #2a3444;
+        color: #8b9bb4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+    }
+    .step.active .step-circle {
+        background: #4caf50;
         color: white;
-        border-color: #4caf50;
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
     }
-    h1, h2, h3, h4, h5, p, li, label { color: #eaeef2 !important; }
-    .main-title {
+    .step.completed .step-circle {
+        background: #2e7d32;
+        color: white;
+    }
+    .step-label {
+        font-size: 0.7rem;
+        color: #5a6a7a;
+        margin-top: 0.3rem;
+        white-space: nowrap;
+    }
+    .step.active .step-label { color: #4caf50; }
+    .step-line {
+        flex: 1;
+        height: 2px;
+        background: #2a3444;
+        margin: 0 0.5rem;
+        margin-bottom: 1.5rem;
+        max-width: 60px;
+    }
+    .step-line.completed { background: #2e7d32; }
+
+    /* ===== SEARCH BAR ===== */
+    .search-container {
+        position: sticky;
+        top: 0;
+        background: rgba(10, 14, 20, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 0.8rem 1rem;
+        z-index: 100;
+        border-bottom: 1px solid #1e2430;
+    }
+    .search-input {
+        width: 100%;
+        background: #1e2430;
+        border: 1px solid #2a3444;
+        border-radius: 12px;
+        padding: 0.8rem 1rem 0.8rem 2.5rem;
+        color: #eaeef2;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    .search-input:focus {
+        border-color: #4caf50;
+        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    }
+
+    /* ===== METRIC CARDS ===== */
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+    }
+    @media (min-width: 768px) {
+        .metric-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .metric-card {
+        background: linear-gradient(145deg, #1e2430, #252b3a);
+        border-radius: 12px;
+        padding: 1rem;
         text-align: center;
-        font-size: 2rem;
+        border: 1px solid #2a3444;
+    }
+    .metric-card .value {
+        font-size: 1.4rem;
         font-weight: bold;
         color: #4caf50;
-        margin-bottom: 0.5rem;
-        text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        margin: 0.3rem 0;
     }
-    .main-subtitle {
-        text-align: center;
-        color: #b0bec5;
-        font-size: 0.9rem;
-        margin-bottom: 1.5rem;
+    .metric-card .label {
+        font-size: 0.75rem;
+        color: #8b9bb4;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
-    .stSidebar .stRadio label { color: #b0bec5 !important; font-size: 1rem; }
-    .stSidebar .stRadio div[role="radiogroup"] label {
-        background-color: #2a2f39;
-        padding: 0.7rem 1rem;
-        border-radius: 10px;
-        margin: 4px 0;
-        color: #ffffff !important;
-        font-size: 1rem;
+    .metric-card.alert { border-color: #f44336; }
+    .metric-card.alert .value { color: #f44336; }
+    .metric-card.warning { border-color: #ff9800; }
+    .metric-card.warning .value { color: #ff9800; }
+
+    /* ===== QUICK STATS BAR ===== */
+    .quick-stats {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding: 0.5rem 0;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
-    .stSidebar .stRadio div[role="radiogroup"] label:hover { background-color: #3a4050; }
-    .stSidebar .stRadio div[role="radiogroup"] label[data-selected="true"] {
-        background-color: #4caf50;
+    .quick-stats::-webkit-scrollbar { display: none; }
+    .quick-stat-pill {
+        background: #1e2430;
+        border: 1px solid #2a3444;
+        border-radius: 20px;
+        padding: 0.4rem 0.8rem;
+        white-space: nowrap;
+        font-size: 0.8rem;
+        color: #8b9bb4;
+    }
+    .quick-stat-pill strong { color: #4caf50; }
+
+    /* ===== FORM STYLES ===== */
+    .stForm {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+    .stTextInput > div > div, .stNumberInput > div > div, .stSelectbox > div > div {
+        background: #1e2430 !important;
+        border: 1px solid #2a3444 !important;
+        border-radius: 12px !important;
+        color: #eaeef2 !important;
+    }
+    .stTextInput > div > div:focus-within, .stNumberInput > div > div:focus-within {
+        border-color: #4caf50 !important;
+        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1) !important;
+    }
+    .stButton > button {
+        background: linear-gradient(135deg, #4caf50, #2e7d32) !important;
         color: white !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 0.9rem !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        width: 100% !important;
+        transition: all 0.2s !important;
     }
-    .stSelectbox > div > div, .stTextInput > div > div, .stNumberInput > div > div {
-        background-color: #2a2f39;
-        color: #eaeef2;
-        border-radius: 10px;
-        border: 1px solid #3a4050;
-        font-size: 1rem;
-        padding: 0.5rem;
+    .stButton > button:active {
+        transform: scale(0.98) !important;
     }
+    .stButton > button.secondary {
+        background: #2a3444 !important;
+        color: #eaeef2 !important;
+    }
+
+    /* ===== TABS OPTIMIZADOS ===== */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 6px;
-        background-color: #1e2229;
-        padding: 0.5rem;
+        gap: 4px;
+        background: #121820;
+        padding: 0.4rem;
         border-radius: 12px;
-        flex-wrap: wrap;
+        border: 1px solid #1e2430;
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: #2a2f39;
-        color: #b0bec5;
-        border-radius: 10px;
-        padding: 0.6rem 1rem;
-        font-weight: bold;
-        font-size: 0.9rem;
-        flex: 1 1 auto;
+        background: transparent;
+        color: #5a6a7a;
+        border-radius: 8px;
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+        flex: 1;
         text-align: center;
+        border: none;
     }
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background-color: #4caf50;
-        color: white;
+        background: #1e2430;
+        color: #4caf50;
+        font-weight: 600;
     }
-    .login-container {
+
+    /* ===== EXPANDER ===== */
+    .stExpander {
+        background: #1e2430;
+        border-radius: 12px;
+        border: 1px solid #2a3444;
+        overflow: hidden;
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2a3444; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4caf50; }
+
+    /* ===== LOGIN SCREEN ===== */
+    .login-screen {
+        min-height: 100vh;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        min-height: 70vh;
-    }
-    .login-box {
-        background-color: #1e2229;
         padding: 2rem;
-        border-radius: 20px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-        max-width: 400px;
-        width: 100%;
-        border: 1px solid #2a2f39;
+        background: linear-gradient(180deg, #0a0e14 0%, #121820 50%, #0d1f0d 100%);
     }
-    .login-box h1 { color: #4caf50; text-align: center; font-size: 1.8rem; margin-bottom: 0.5rem; }
-    .login-box p { color: #b0bec5; text-align: center; margin-bottom: 1.5rem; }
-    .login-box .stTextInput > div > div {
-        background-color: #2a2f39 !important;
-        border: 1px solid #3a4050 !important;
-        font-size: 1rem;
-        padding: 0.6rem;
+    .login-logo {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: float 3s ease-in-out infinite;
     }
-    .login-box .stButton > button {
-        width: 100%;
-        background-color: #4caf50;
-        color: white;
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    .login-title {
+        font-size: 1.8rem;
         font-weight: bold;
-        border: none;
-        padding: 0.8rem;
-        border-radius: 12px;
-        font-size: 1.1rem;
-        transition: 0.3s;
-    }
-    .login-box .stButton > button:hover { background-color: #388e3c; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #1e2229; }
-    ::-webkit-scrollbar-thumb { background: #4caf50; border-radius: 3px; }
-    .tabla-referencia {
-        background-color: #1e2229;
-        border-radius: 12px;
-        padding: 1rem;
-        margin-top: 1rem;
-        border: 1px solid #3a4050;
-    }
-    .tabla-referencia th, .tabla-referencia td {
-        padding: 0.5rem;
+        color: #4caf50;
+        margin-bottom: 0.5rem;
         text-align: center;
-        border-bottom: 1px solid #2a2f39;
     }
-    .tabla-referencia th {
-        color: #4caf50;
-        font-weight: bold;
+    .login-subtitle {
+        color: #5a6a7a;
+        margin-bottom: 2rem;
+        text-align: center;
     }
-    .config-section {
-        background-color: #1e2229;
+
+    /* ===== CONTENT PADDING FOR BOTTOM NAV ===== */
+    .main-content {
+        padding-bottom: 80px;
+    }
+
+    /* ===== HIDE STREAMLIT ELEMENTS ===== */
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+    .stDeployButton { display: none !important; }
+
+    /* ===== DATAFRAME OPTIMIZADA ===== */
+    .stDataFrame { 
+        background: #1e2430 !important; 
         border-radius: 12px;
-        padding: 1.2rem;
-        margin-bottom: 1.5rem;
-        border: 1px solid #2a2f39;
+        border: 1px solid #2a3444;
     }
-    .config-section h4 {
-        color: #4caf50;
-        margin-top: 0;
+    .stDataFrame th { 
+        background: #252b3a !important; 
+        color: #4caf50 !important;
+        font-weight: 600;
     }
-    @media (max-width: 768px) {
-        .stColumns { flex-direction: column !important; }
-        .stColumns > div { width: 100% !important; margin-bottom: 1rem; }
-        .main-title { font-size: 1.6rem; }
-        .tabla-referencia { font-size: 0.8rem; padding: 0.5rem; }
+    .stDataFrame td { color: #eaeef2 !important; }
+
+    /* ===== PROGRESS BAR ===== */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #4caf50, #2e7d32) !important;
+    }
+
+    /* ===== ALERTS ===== */
+    .stAlert {
+        background: #1e2430 !important;
+        border: 1px solid #2a3444 !important;
+        border-radius: 12px !important;
+    }
+    .stAlert [data-testid="stAlertContent"] {
+        color: #eaeef2 !important;
+    }
+
+    /* ===== SECTION HEADERS ===== */
+    h1, h2, h3 { color: #ffffff !important; }
+    h2 { font-size: 1.3rem !important; margin-top: 1.5rem !important; }
+    h3 { font-size: 1.1rem !important; }
+
+    /* ===== DIVIDER ===== */
+    hr {
+        border-color: #1e2430 !important;
+        margin: 1.5rem 0 !important;
+    }
+
+    /* ===== PLOTLY CHARTS DARK MODE ===== */
+    .js-plotly-plot .plotly .main-svg {
+        background: transparent !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- PWA: MANIFEST Y SERVICE WORKER ----------
-st.markdown("""
-<link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('Service Worker registrado'))
-      .catch((err) => console.log('Error al registrar SW:', err));
-  }
-</script>
-""", unsafe_allow_html=True)
-
-# ---------- CONEXIÓN A SUPABASE ----------
-@st.cache_resource
+# ============================================================
+# CONEXIÓN A SUPABASE CON MANEJO DE ERRORES MEJORADO
+# ============================================================
+@st.cache_resource(show_spinner=False)
 def init_supabase():
-    url = st.secrets['PROJECT_URL'].strip().rstrip('/')
-    key = st.secrets['API_SUPABASE'].strip()
-    return create_client(url, key)
+    try:
+        url = st.secrets['PROJECT_URL'].strip().rstrip('/')
+        key = st.secrets['API_SUPABASE'].strip()
+        return create_client(url, key)
+    except Exception as e:
+        st.error(f"Error de conexión: {e}")
+        return None
 
 supabase = init_supabase()
 
-# ---------- FUNCIONES PARA OBTENER CONFIGURACIÓN DE USUARIO ----------
-def obtener_config_usuario(owner_name):
-    """Recupera token de Voice Monkey y webhook de HA desde Supabase."""
-    try:
-        res = supabase.table("usuarios_tokens").select("token_voice_monkey, webhook_ha").eq("owner_name", owner_name).execute()
-        if res.data and len(res.data) > 0:
-            return res.data[0]
-        else:
-            return {"token_voice_monkey": None, "webhook_ha": None}
-    except Exception as e:
-        print(f"Error al obtener configuración: {e}")
-        return {"token_voice_monkey": None, "webhook_ha": None}
+# ============================================================
+# FUNCIONES DE UTILIDAD
+# ============================================================
+def show_toast(message, type_="success", duration=3000):
+    """Muestra una notificación tipo toast que desaparece automáticamente."""
+    icons = {"success": "✅", "error": "❌", "warning": "⚠️", "info": "ℹ️"}
+    colors = {"success": "#4caf50", "error": "#f44336", "warning": "#ff9800", "info": "#2196f3"}
+    icon = icons.get(type_, "ℹ️")
 
-def guardar_config_usuario(owner_name, token_voice_monkey=None, webhook_ha=None):
-    """Guarda o actualiza la configuración del usuario."""
-    data = {"owner_name": owner_name}
-    if token_voice_monkey is not None:
-        data["token_voice_monkey"] = token_voice_monkey
-    if webhook_ha is not None:
-        data["webhook_ha"] = webhook_ha
-    try:
-        supabase.table("usuarios_tokens").upsert(data, on_conflict="owner_name").execute()
-        return True
-    except Exception as e:
-        print(f"Error al guardar configuración: {e}")
-        return False
-
-def eliminar_config_usuario(owner_name, campo):
-    """Elimina un campo específico de la configuración (token o webhook)."""
-    try:
-        if campo == "token":
-            supabase.table("usuarios_tokens").update({"token_voice_monkey": None}).eq("owner_name", owner_name).execute()
-        elif campo == "webhook":
-            supabase.table("usuarios_tokens").update({"webhook_ha": None}).eq("owner_name", owner_name).execute()
-        return True
-    except Exception as e:
-        print(f"Error al eliminar {campo}: {e}")
-        return False
-
-# ---------- FUNCIONES PARA ENVIAR NOTIFICACIONES ----------
-def enviar_notificacion_alexa(mensaje, owner_name):
+    toast_html = f"""
+    <div class="toast-container">
+        <div class="toast {type_}">
+            <span style="font-size:1.2rem">{icon}</span>
+            <span style="color:#eaeef2; font-size:0.9rem">{message}</span>
+        </div>
+    </div>
+    <script>
+        setTimeout(() => {{
+            const toast = document.querySelector('.toast-container');
+            if (toast) toast.style.display = 'none';
+        }}, {duration});
+    </script>
     """
-    Envía una notificación de voz a Alexa usando Voice Monkey.
-    Retorna (éxito, mensaje).
-    """
-    config = obtener_config_usuario(owner_name)
-    token = config.get("token_voice_monkey")
-    if not token:
-        return False, "No tienes token de Voice Monkey configurado. Ve a Configuración para agregarlo."
-    
-    url = "https://api-v2.voicemonkey.io/announcement"
-    payload = {
-        "token": token,
-        "text": mensaje
-    }
-    
-    try:
-        response = requests.post(url, json=payload, timeout=10)
-        if response.status_code == 200:
-            return True, "📢 Notificación enviada a tu Alexa"
-        else:
-            return False, f"Error: {response.status_code} - {response.text}"
-    except Exception as e:
-        return False, f"Error de conexión: {e}"
-
-def enviar_notificacion_ha(mensaje, owner_name, titulo="RIARE Exotic's"):
-    """
-    Envía una notificación a Home Assistant vía webhook.
-    Retorna (éxito, mensaje).
-    """
-    config = obtener_config_usuario(owner_name)
-    webhook_url = config.get("webhook_ha")
-    if not webhook_url:
-        return False, "No tienes webhook de Home Assistant configurado. Ve a Configuración para agregarlo."
-    
-    payload = {
-        "message": mensaje,
-        "title": titulo
-    }
-    
-    try:
-        response = requests.post(webhook_url, json=payload, timeout=10)
-        if response.status_code == 200:
-            return True, "🏠 Notificación enviada a Home Assistant"
-        else:
-            return False, f"Error: {response.status_code} - {response.text}"
-    except Exception as e:
-        return False, f"Error de conexión: {e}"
-
-def enviar_notificaciones_dual(mensaje, owner_name, titulo="RIARE Exotic's"):
-    """
-    Envía notificación a Alexa y/o Home Assistant según lo configurado.
-    Retorna diccionario con resultados.
-    """
-    resultados = {
-        "alexa": {"enviado": False, "mensaje": ""},
-        "ha": {"enviado": False, "mensaje": ""}
-    }
-    
-    config = obtener_config_usuario(owner_name)
-    
-    # Voice Monkey (Alexa)
-    if config.get("token_voice_monkey"):
-        exito, msg = enviar_notificacion_alexa(mensaje, owner_name)
-        resultados["alexa"]["enviado"] = exito
-        resultados["alexa"]["mensaje"] = msg
-    else:
-        resultados["alexa"]["mensaje"] = "Token de Voice Monkey no configurado"
-    
-    # Home Assistant
-    if config.get("webhook_ha"):
-        exito, msg = enviar_notificacion_ha(mensaje, owner_name, titulo)
-        resultados["ha"]["enviado"] = exito
-        resultados["ha"]["mensaje"] = msg
-    else:
-        resultados["ha"]["mensaje"] = "Webhook de Home Assistant no configurado"
-    
-    return resultados
-
-# ---------- RECOMENDACIÓN DE ALIMENTACIÓN ----------
-def calcular_recomendacion_presa(peso_serpiente):
-    """Calcula el rango de peso de la presa y la frecuencia según el peso."""
-    if peso_serpiente is None or peso_serpiente <= 0:
-        return {
-            "rango_presa": "No disponible",
-            "frecuencia": "Registra el peso para obtener recomendación",
-            "peso_min": 0,
-            "peso_max": 0,
-            "etapa": "Sin datos"
-        }
-    
-    if peso_serpiente < 500:
-        porcentaje_min, porcentaje_max = 0.10, 0.15
-        frecuencia = "cada 5-7 días"
-        etapa = "Juvenil (<500g)"
-    elif peso_serpiente < 1000:
-        porcentaje_min, porcentaje_max = 0.07, 0.10
-        frecuencia = "cada 7-10 días"
-        etapa = "Sub-adulto (500-1000g)"
-    else:
-        porcentaje_min, porcentaje_max = 0.05, 0.07
-        frecuencia = "cada 10-14 días"
-        etapa = "Adulto (>1000g)"
-    
-    peso_min_presa = peso_serpiente * porcentaje_min
-    peso_max_presa = peso_serpiente * porcentaje_max
-    
-    return {
-        "rango_presa": f"{peso_min_presa:.0f}g - {peso_max_presa:.0f}g",
-        "frecuencia": frecuencia,
-        "peso_min": round(peso_min_presa),
-        "peso_max": round(peso_max_presa),
-        "etapa": etapa,
-        "porcentaje_min": f"{porcentaje_min*100:.0f}%",
-        "porcentaje_max": f"{porcentaje_max*100:.0f}%"
-    }
-
-# ---------- BASE DE CONOCIMIENTO ----------
-SPECIES_DB = {
-    "Boa constrictor": {
-        "feed_interval": 10,
-        "temp_range": (26, 32),
-        "humidity": 60,
-        "adult_weight": 5000,
-        "shed_interval": 45,
-        "diet": "Roedores (ratas, ratones)",
-        "enclosure": "Terrario de 120x60x60 cm",
-        "notes": "Requiere ramas para trepar y escondites.",
-        "birth_weight": 50,
-        "months_to_adult": 36,
-        "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Conejo"]
-    },
-    "Python regius": {
-        "feed_interval": 7,
-        "temp_range": (24, 30),
-        "humidity": 55,
-        "adult_weight": 2000,
-        "shed_interval": 30,
-        "diet": "Roedores (ratones pequeños)",
-        "enclosure": "Terrario de 90x45x45 cm",
-        "notes": "Necesita alta humedad durante la muda.",
-        "birth_weight": 60,
-        "months_to_adult": 24,
-        "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Pinky", "Fuzzy", "Ratón pequeño", "Rata weanling", "Rata pequeña", "Rata mediana", "Rata grande"]
-    },
-    "Pantherophis guttatus": {
-        "feed_interval": 5,
-        "temp_range": (22, 28),
-        "humidity": 40,
-        "adult_weight": 800,
-        "shed_interval": 20,
-        "diet": "Roedores (ratones pequeños)",
-        "enclosure": "Terrario de 60x40x40 cm",
-        "notes": "Muy activo, necesita espacio para explorar.",
-        "birth_weight": 10,
-        "months_to_adult": 18,
-        "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Ratón", "Pinky", "Fuzzy"]
-    },
-    "Lampropeltis getula": {
-        "feed_interval": 7,
-        "temp_range": (24, 29),
-        "humidity": 50,
-        "adult_weight": 1200,
-        "shed_interval": 25,
-        "diet": "Roedores, lagartijas",
-        "enclosure": "Terrario de 90x45x45 cm",
-        "notes": "Puede ser caníbal, mantener separados.",
-        "birth_weight": 15,
-        "months_to_adult": 20,
-        "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Ratón", "Lagartija", "Pinky"]
-    },
-    "Morelia spilota": {
-        "feed_interval": 10,
-        "temp_range": (26, 32),
-        "humidity": 60,
-        "adult_weight": 3000,
-        "shed_interval": 40,
-        "diet": "Roedores y aves pequeñas",
-        "enclosure": "Terrario alto (120x60x120 cm)",
-        "notes": "Arborícola, necesita ramas y altura.",
-        "birth_weight": 40,
-        "months_to_adult": 30,
-        "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Codorniz"]
-    },
-    "Piton Bola": {
-        "feed_interval": 7,
-        "temp_range": (24, 30),
-        "humidity": 55,
-        "adult_weight": 2000,
-        "shed_interval": 30,
-        "diet": "Roedores (ratones pequeños)",
-        "enclosure": "Terrario de 90x45x45 cm",
-        "notes": "Especie común en cautiverio.",
-        "birth_weight": 60,
-        "months_to_adult": 24,
-        "diet_type": "carnivoro",
-        "alimentos_sugeridos": ["Pinky", "Fuzzy", "Ratón pequeño", "Rata weanling", "Rata pequeña", "Rata mediana", "Rata grande"]
-    },
-    "Pogona Viticeps": {
-        "feed_interval": 1,
-        "temp_range": (35, 40),
-        "humidity": 30,
-        "adult_weight": 500,
-        "shed_interval": 14,
-        "diet": "Insectos, verduras, frutas",
-        "enclosure": "Terrario de 120x60x60 cm con luz UVB",
-        "notes": "Necesita luz UVB y gradiente térmico.",
-        "birth_weight": 5,
-        "months_to_adult": 12,
-        "diet_type": "omnivoro",
-        "alimentos_sugeridos": ["Verdura", "Fruta", "Hojas verdes", "Insecto"]
-    }
-}
-DEFAULT_SPECIES = {
-    "feed_interval": 7,
-    "temp_range": (25, 30),
-    "humidity": 50,
-    "adult_weight": 1000,
-    "shed_interval": 30,
-    "diet": "Roedores",
-    "enclosure": "Terrario estándar",
-    "notes": "Sin información adicional.",
-    "birth_weight": 20,
-    "months_to_adult": 24,
-    "diet_type": "carnivoro",
-    "alimentos_sugeridos": None
-}
-
-# ---------- CLASIFICACIÓN DE ALIMENTOS ----------
-FOOD_CATEGORIES = {
-    'insecto': [
-        'grillo', 'tenebrio', 'gusano', 'cucaracha', 'langosta', 'saltamontes',
-        'mosca', 'larva', 'zophoba', 'superworm', 'mealworm', 'cricket', 'roach',
-        'hormiga', 'termita', 'escarabajo', 'polilla', 'gusano de seda', 'silk worm',
-        'chapulín'
-    ],
-    'verdura': [
-        'lechuga', 'zanahoria', 'calabacín', 'pepino', 'pimiento', 'brócoli', 'col',
-        'espinaca', 'acelga', 'berza', 'diente de león', 'nopal', 'tuna', 'cardo',
-        'calabaza', 'berenjena', 'judía verde', 'guisante', 'maíz', 'rábano', 'remolacha',
-        'apio', 'esparrago', 'alcachofa', 'coliflor', 'repollo', 'col rizada', 'kale',
-        'hoja de mostaza', 'hoja de nabo', 'perejil', 'cilantro', 'albahaca'
-    ],
-    'fruta': [
-        'manzana', 'plátano', 'fresa', 'mango', 'papaya', 'pera', 'melón', 'sandía',
-        'kiwi', 'uva', 'arándano', 'frambuesa', 'mora', 'cereza', 'durazno', 'ciruela',
-        'higo', 'granada', 'pomelo', 'naranja', 'mandarina', 'limón', 'piña', 'coco',
-        'maracuyá', 'guanábana', 'carambola', 'litchi', 'rambután'
-    ]
-}
-
-def classify_food(food_text):
-    if not food_text:
-        return 'desconocido'
-    food_lower = food_text.lower().strip()
-    for categoria, keywords in FOOD_CATEGORIES.items():
-        for kw in keywords:
-            if kw in food_lower:
-                return categoria
-    if 'verdura' in food_lower or 'vegetal' in food_lower or 'hoja' in food_lower:
-        return 'verdura'
-    if 'fruta' in food_lower:
-        return 'fruta'
-    if 'insecto' in food_lower or 'bicho' in food_lower or 'proteína animal' in food_lower:
-        return 'insecto'
-    return 'otro'
-
-# ---------- FUNCIONES AUXILIARES ----------
-def get_species_info(species_name, weight=None):
-    base = SPECIES_DB.get(species_name, DEFAULT_SPECIES)
-    if weight is not None and weight > 0 and species_name in ["Python regius", "Piton Bola"]:
-        rec = calcular_recomendacion_presa(weight)
-        base = base.copy()
-        base['feed_interval'] = rec.get('frecuencia', '7 días')
-        base['presa_sugerida'] = rec.get('rango_presa', 'N/A')
-        base['peso_presa_min'] = rec.get('peso_min', 0)
-        base['peso_presa_max'] = rec.get('peso_max', 0)
-        base['etapa'] = rec.get('etapa', 'N/A')
-        base['porcentaje_min'] = rec.get('porcentaje_min', 'N/A')
-        base['porcentaje_max'] = rec.get('porcentaje_max', 'N/A')
-    return base
+    st.markdown(toast_html, unsafe_allow_html=True)
 
 def safe_days_between(date_str):
     try:
@@ -563,803 +540,895 @@ def safe_days_between(date_str):
 
 def safe_int(value, default=0):
     try:
-        if value is None:
-            return default
-        return int(value)
+        return int(value) if value is not None else default
     except (ValueError, TypeError):
         return default
 
-# ---------- AUTENTICACIÓN ----------
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-    st.session_state.selected_reptile = None
+# ============================================================
+# CONFIGURACIÓN DE USUARIO
+# ============================================================
+@st.cache_data(ttl=300)
+def obtener_config_usuario(owner_name):
+    if not supabase:
+        return {"token_voice_monkey": None, "webhook_ha": None}
+    try:
+        res = supabase.table("usuarios_tokens").select("token_voice_monkey, webhook_ha").eq("owner_name", owner_name).execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0]
+    except Exception as e:
+        st.error(f"Error de configuración: {e}")
+    return {"token_voice_monkey": None, "webhook_ha": None}
 
-if not st.session_state.authenticated:
-    st.markdown("""
-    <div class="login-container">
-        <div class="login-box">
-            <h1>🦎 RIARE Exotic's</h1>
-            <p>Gestión profesional de reptiles</p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        username = st.text_input("👤 Nombre de Propietario", key="login_user", placeholder="Tu nombre", label_visibility="collapsed")
-        if st.button("🚪 Ingresar", use_container_width=True):
-            if username.strip():
-                st.session_state.authenticated = True
-                st.session_state.username = username.strip()
-                st.rerun()
-            else:
-                st.error("Por favor, introduce un nombre.")
-    st.stop()
+def guardar_config_usuario(owner_name, token_voice_monkey=None, webhook_ha=None):
+    if not supabase:
+        return False
+    data = {"owner_name": owner_name}
+    if token_voice_monkey is not None:
+        data["token_voice_monkey"] = token_voice_monkey
+    if webhook_ha is not None:
+        data["webhook_ha"] = webhook_ha
+    try:
+        supabase.table("usuarios_tokens").upsert(data, on_conflict="owner_name").execute()
+        st.cache_data.clear()
+        return True
+    except Exception as e:
+        st.error(f"Error al guardar: {e}")
+        return False
 
-# ---------- TÍTULO ----------
-st.markdown('<div class="main-title">🦎 RIARE Exotic\'s</div>', unsafe_allow_html=True)
-st.markdown('<div class="main-subtitle">Sistema de gestión herpetológica</div>', unsafe_allow_html=True)
+# ============================================================
+# NOTIFICACIONES
+# ============================================================
+def enviar_notificacion_alexa(mensaje, owner_name):
+    config = obtener_config_usuario(owner_name)
+    token = config.get("token_voice_monkey")
+    if not token:
+        return False, "Token no configurado"
+    try:
+        response = requests.post("https://api-v2.voicemonkey.io/announcement", 
+                                json={"token": token, "text": mensaje}, timeout=10)
+        return response.status_code == 200, "Alexa ✅" if response.status_code == 200 else f"Error {response.status_code}"
+    except Exception as e:
+        return False, f"Error: {e}"
 
-# ---------- BARRA LATERAL ----------
-with st.sidebar:
-    st.image("https://img.icons8.com/color/96/000000/snake.png", width=80)
-    st.title(f"👤 {st.session_state.username}")
-    st.divider()
-    menu = st.radio(
-        "📌 Módulos",
-        ["📊 Panel de Control", "➕ Nuevo Ejemplar", "🍽️ Alimentación", "🔄 Muda", "⚖️ Registro de Peso", "🏥 Veterinario", "⚙️ Configuración", "📈 Estadísticas Globales"],
-        index=0
-    )
-    st.divider()
-    if st.button("🚪 Cerrar Sesión", use_container_width=True):
-        st.session_state.authenticated = False
-        st.session_state.selected_reptile = None
-        st.rerun()
-    st.caption("🐍 RIARE Exotic's v3.5")
+def enviar_notificacion_ha(mensaje, owner_name, titulo="RIARE"):
+    config = obtener_config_usuario(owner_name)
+    webhook_url = config.get("webhook_ha")
+    if not webhook_url:
+        return False, "Webhook no configurado"
+    try:
+        response = requests.post(webhook_url, json={"message": mensaje, "title": titulo}, timeout=10)
+        return response.status_code == 200, "HA ✅" if response.status_code == 200 else f"Error {response.status_code}"
+    except Exception as e:
+        return False, f"Error: {e}"
 
-# ---------- FUNCIONES DE CONSULTA ----------
-@st.cache_data(ttl=60)
+# ============================================================
+# BASE DE CONOCIMIENTO
+# ============================================================
+SPECIES_DB = {
+    "Boa constrictor": {
+        "feed_interval": 10, "temp_range": (26, 32), "humidity": 60,
+        "adult_weight": 5000, "shed_interval": 45, "diet": "Roedores",
+        "enclosure": "120x60x60 cm", "notes": "Requiere ramas para trepar",
+        "birth_weight": 50, "months_to_adult": 36, "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Conejo"]
+    },
+    "Python regius": {
+        "feed_interval": 7, "temp_range": (24, 30), "humidity": 55,
+        "adult_weight": 2000, "shed_interval": 30, "diet": "Roedores",
+        "enclosure": "90x45x45 cm", "notes": "Alta humedad durante muda",
+        "birth_weight": 60, "months_to_adult": 24, "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Pinky", "Fuzzy", "Ratón pequeño", "Rata weanling", "Rata pequeña", "Rata mediana", "Rata grande"]
+    },
+    "Pantherophis guttatus": {
+        "feed_interval": 5, "temp_range": (22, 28), "humidity": 40,
+        "adult_weight": 800, "shed_interval": 20, "diet": "Roedores",
+        "enclosure": "60x40x40 cm", "notes": "Muy activo, necesita espacio",
+        "birth_weight": 10, "months_to_adult": 18, "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Ratón", "Pinky", "Fuzzy"]
+    },
+    "Lampropeltis getula": {
+        "feed_interval": 7, "temp_range": (24, 29), "humidity": 50,
+        "adult_weight": 1200, "shed_interval": 25, "diet": "Roedores, lagartijas",
+        "enclosure": "90x45x45 cm", "notes": "Puede ser caníbal",
+        "birth_weight": 15, "months_to_adult": 20, "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Ratón", "Lagartija", "Pinky"]
+    },
+    "Morelia spilota": {
+        "feed_interval": 10, "temp_range": (26, 32), "humidity": 60,
+        "adult_weight": 3000, "shed_interval": 40, "diet": "Roedores y aves",
+        "enclosure": "120x60x120 cm", "notes": "Arborícola, necesita altura",
+        "birth_weight": 40, "months_to_adult": 30, "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Rata", "Ratón", "Pollo", "Codorniz"]
+    },
+    "Piton Bola": {
+        "feed_interval": 7, "temp_range": (24, 30), "humidity": 55,
+        "adult_weight": 2000, "shed_interval": 30, "diet": "Roedores",
+        "enclosure": "90x45x45 cm", "notes": "Común en cautiverio",
+        "birth_weight": 60, "months_to_adult": 24, "diet_type": "carnivoro",
+        "alimentos_sugeridos": ["Pinky", "Fuzzy", "Ratón pequeño", "Rata weanling", "Rata pequeña", "Rata mediana", "Rata grande"]
+    },
+    "Pogona Viticeps": {
+        "feed_interval": 1, "temp_range": (35, 40), "humidity": 30,
+        "adult_weight": 500, "shed_interval": 14, "diet": "Insectos, verduras",
+        "enclosure": "120x60x60 cm + UVB", "notes": "Necesita luz UVB",
+        "birth_weight": 5, "months_to_adult": 12, "diet_type": "omnivoro",
+        "alimentos_sugeridos": ["Verdura", "Fruta", "Hojas verdes", "Insecto"]
+    }
+}
+DEFAULT_SPECIES = {
+    "feed_interval": 7, "temp_range": (25, 30), "humidity": 50,
+    "adult_weight": 1000, "shed_interval": 30, "diet": "Roedores",
+    "enclosure": "Terrario estándar", "notes": "Sin información",
+    "birth_weight": 20, "months_to_adult": 24, "diet_type": "carnivoro",
+    "alimentos_sugeridos": None
+}
+
+def calcular_recomendacion_presa(peso_serpiente):
+    if not peso_serpiente or peso_serpiente <= 0:
+        return {"rango_presa": "No disponible", "frecuencia": "Registra peso", "etapa": "Sin datos"}
+
+    if peso_serpiente < 500:
+        return {"rango_presa": f"{peso_serpiente*0.10:.0f}g-{peso_serpiente*0.15:.0f}g", 
+                "frecuencia": "5-7 días", "etapa": "Juvenil", "porcentaje": "10-15%"}
+    elif peso_serpiente < 1000:
+        return {"rango_presa": f"{peso_serpiente*0.07:.0f}g-{peso_serpiente*0.10:.0f}g",
+                "frecuencia": "7-10 días", "etapa": "Sub-adulto", "porcentaje": "7-10%"}
+    else:
+        return {"rango_presa": f"{peso_serpiente*0.05:.0f}g-{peso_serpiente*0.07:.0f}g",
+                "frecuencia": "10-14 días", "etapa": "Adulto", "porcentaje": "5-7%"}
+
+def get_species_info(species_name, weight=None):
+    base = SPECIES_DB.get(species_name, DEFAULT_SPECIES).copy()
+    if weight and weight > 0 and species_name in ["Python regius", "Piton Bola"]:
+        rec = calcular_recomendacion_presa(weight)
+        base.update(rec)
+    return base
+
+# ============================================================
+# CONSULTAS A SUPABASE
+# ============================================================
+@st.cache_data(ttl=120)
 def get_reptiles(owner):
+    if not supabase:
+        return []
     try:
         res = supabase.table("reptiles").select("*").eq("owner_name", owner).execute()
-        return res.data
+        return res.data or []
     except:
         return []
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=120)
 def get_events(table_name, unique_id):
+    if not supabase:
+        return []
     try:
         res = supabase.table(table_name).select("*").eq("unique_id", unique_id).order("fecha", desc=True).execute()
-        return res.data
+        return res.data or []
     except:
         return []
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=120)
 def get_peso_history(unique_id):
+    if not supabase:
+        return []
     try:
         res = supabase.table("peso").select("*").eq("unique_id", unique_id).order("fecha", asc=True).execute()
-        return res.data
+        return res.data or []
     except:
         return []
 
-# ---------- FUNCIÓN PARA MOSTRAR BOTONES DE EJEMPLAR ----------
-def mostrar_botones_ejemplares(reptiles):
-    if not reptiles:
-        st.info("No hay ejemplares registrados.")
-        return None
-    
-    cols = st.columns(2)
-    selected_id = None
-    
-    for idx, r in enumerate(reptiles):
-        col = cols[idx % 2]
-        label = f"{r.get('name', 'Sin nombre')}\n({r.get('species', 'N/A')})"
-        is_selected = (st.session_state.get('selected_reptile') == r['unique_id'])
-        
-        if col.button(label, key=f"btn_{r['unique_id']}", use_container_width=True):
-            st.session_state.selected_reptile = r['unique_id']
-            st.rerun()
-    
-    if st.session_state.selected_reptile:
-        for r in reptiles:
-            if r['unique_id'] == st.session_state.selected_reptile:
-                return r
-    return None
+# ============================================================
+# ESTADO DE SESIÓN
+# ============================================================
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "selected_reptile" not in st.session_state:
+    st.session_state.selected_reptile = None
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "dashboard"
+if "search_query" not in st.session_state:
+    st.session_state.search_query = ""
+if "show_fab_menu" not in st.session_state:
+    st.session_state.show_fab_menu = False
+if "step" not in st.session_state:
+    st.session_state.step = 1
 
-# ---------- PÁGINAS ----------
+# ============================================================
+# LOGIN SCREEN
+# ============================================================
+if not st.session_state.authenticated:
+    st.markdown("""
+    <div class="login-screen">
+        <div class="login-logo">🦎</div>
+        <div class="login-title">RIARE Exotic's</div>
+        <div class="login-subtitle">Gestión profesional de reptiles</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-# ---- PANEL DE CONTROL ----
-if menu == "📊 Panel de Control":
-    st.header("📊 Panel de Control")
-    reptiles = get_reptiles(st.session_state.username)
+    with st.container():
+        username = st.text_input("👤 Nombre de Propietario", 
+                                placeholder="Tu nombre", 
+                                label_visibility="collapsed",
+                                key="login_user")
 
-    if not reptiles:
-        st.info("No hay ejemplares registrados. Ve a 'Nuevo Ejemplar' para agregar uno.")
-    else:
-        st.subheader("🦎 Selecciona un ejemplar")
-        item = mostrar_botones_ejemplares(reptiles)
-        
-        if not item:
-            st.warning("Selecciona un ejemplar de los botones arriba.")
-        else:
-            unique_id = item['unique_id']
-            species_name = item.get('species', '')
-            current_weight = safe_int(item.get('peso'))
-            species_info = get_species_info(species_name, current_weight)
-
-            alimentacion = get_events("alimentacion", unique_id)
-            muda = get_events("muda", unique_id)
-            veterinario = get_events("veterinario", unique_id)
-            peso_hist = get_peso_history(unique_id)
-
-            # ---- Métricas superiores ----
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("🐍 Especie", species_name if species_name else "Desconocida")
-            with col2:
-                st.metric("⚖️ Peso actual", f"{current_weight} g")
-            with col3:
-                if alimentacion and len(alimentacion) > 0:
-                    last_feed = alimentacion[0].get('fecha')
-                    days = safe_days_between(last_feed)
-                    st.metric("🍽️ Última alimentación", f"Hace {days} días" if days is not None else "N/A")
-                else:
-                    st.metric("🍽️ Última alimentación", "Sin registros")
-            with col4:
-                if muda and len(muda) > 0:
-                    last_shed = muda[0].get('fecha')
-                    days = safe_days_between(last_shed)
-                    st.metric("🔄 Última muda", f"Hace {days} días" if days is not None else "N/A")
-                else:
-                    st.metric("🔄 Última muda", "Sin registros")
-
-            st.divider()
-
-            # ---- Información del ejemplar ----
-            st.subheader("📋 Información del ejemplar")
-            col_info1, col_info2 = st.columns(2)
-            with col_info1:
-                st.write(f"**📛 Nombre:** {item.get('name', 'Sin nombre')}")
-                st.write(f"**🔬 Especie:** {item.get('species', 'N/A')}")
-                st.write(f"**🧬 Fase/Gen:** {item.get('fase', 'N/A')}")
-            with col_info2:
-                st.write(f"**⚥ Sexo:** {item.get('sex', 'N/A')}")
-                st.write(f"**📄 Pedimento:** {item.get('pedimento', 'N/A')}")
-                st.write(f"**📝 Notas:** {item.get('notas', 'N/A')}")
-
-            st.divider()
-
-            # ---- Recomendaciones personalizadas ----
-            st.subheader("🧠 Recomendaciones personalizadas")
-            with st.container():
-                col_rec1, col_rec2 = st.columns([2, 1])
-                with col_rec1:
-                    # Alimentación dinámica
-                    if species_name in ["Python regius", "Piton Bola"] and current_weight > 0:
-                        rec = calcular_recomendacion_presa(current_weight)
-                        st.success(f"📊 **Etapa:** {rec['etapa']}")
-                        st.info(f"🍗 **Presa recomendada:** {rec['rango_presa']} (aprox. {rec['porcentaje_min']} - {rec['porcentaje_max']} del peso corporal)")
-                        st.info(f"📅 **Frecuencia:** {rec['frecuencia']}")
-                        
-                        # Mostrar tabla comparativa
-                        with st.expander("📖 Tabla comparativa de referencia (pitones bola)", expanded=True):
-                            tabla_html = """
-                            <div class="tabla-referencia">
-                                <table style="width:100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr>
-                                            <th>Etapa</th>
-                                            <th>Peso de la serpiente</th>
-                                            <th>% del peso corporal</th>
-                                            <th>Frecuencia</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>🟢 Juvenil</td>
-                                            <td>&lt; 500g</td>
-                                            <td>10% - 15%</td>
-                                            <td>cada 5-7 días</td>
-                                        </tr>
-                                        <tr>
-                                            <td>🟡 Sub-adulto</td>
-                                            <td>500g - 1000g</td>
-                                            <td>7% - 10%</td>
-                                            <td>cada 7-10 días</td>
-                                        </tr>
-                                        <tr>
-                                            <td>🔴 Adulto</td>
-                                            <td>&gt; 1000g</td>
-                                            <td>5% - 7%</td>
-                                            <td>cada 10-14 días</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <p style="font-size:0.8rem; color:#b0bec5; margin-top:0.5rem;">
-                                    💡 <strong>Nota:</strong> Estos valores son orientativos. Ajusta según la condición corporal de tu ejemplar.
-                                </p>
-                            </div>
-                            """
-                            st.markdown(tabla_html, unsafe_allow_html=True)
-                        
-                        # Comparar con la última alimentación y enviar notificaciones
-                        if alimentacion and len(alimentacion) > 0:
-                            last_feed_date_str = alimentacion[0].get('fecha')
-                            try:
-                                last_feed_date = datetime.strptime(last_feed_date_str[:10], "%Y-%m-%d")
-                                days_since = (datetime.now() - last_feed_date).days
-                                freq_days = re.findall(r'\d+', rec['frecuencia'])
-                                if freq_days:
-                                    min_days = int(freq_days[0])
-                                    max_days = int(freq_days[1]) if len(freq_days) > 1 else min_days
-                                    if days_since > max_days:
-                                        st.error(f"⚠️ **Alerta**: Han pasado **{days_since} días** desde la última alimentación. Debería comer {rec['frecuencia']}.")
-                                        
-                                        # --- ENVIAR NOTIFICACIONES DUALES ---
-                                        nombre_ejemplar = item.get('name', 'Ejemplar sin nombre')
-                                        mensaje_alerta = f"Alerta de alimentación: {nombre_ejemplar} lleva {days_since} días sin comer. Intervalo recomendado: {rec['frecuencia']}."
-                                        with st.spinner("Enviando notificaciones..."):
-                                            resultados = enviar_notificaciones_dual(mensaje_alerta, st.session_state.username, "RIARE Alerta")
-                                            # Mostrar resultados
-                                            if resultados["alexa"]["enviado"]:
-                                                st.success(resultados["alexa"]["mensaje"])
-                                            elif resultados["alexa"]["mensaje"] and "no configurado" not in resultados["alexa"]["mensaje"]:
-                                                st.warning(f"Alexa: {resultados['alexa']['mensaje']}")
-                                            if resultados["ha"]["enviado"]:
-                                                st.success(resultados["ha"]["mensaje"])
-                                            elif resultados["ha"]["mensaje"] and "no configurado" not in resultados["ha"]["mensaje"]:
-                                                st.warning(f"HA: {resultados['ha']['mensaje']}")
-                                            # Si ningún sistema está configurado, mostrar mensaje
-                                            if not resultados["alexa"]["enviado"] and not resultados["ha"]["enviado"]:
-                                                st.info("ℹ️ No tienes ningún sistema de notificaciones configurado. Ve a Configuración para agregar token de Voice Monkey o webhook de Home Assistant.")
-                                    else:
-                                        st.success(f"✅ Última alimentación hace {days_since} días. Intervalo recomendado: {rec['frecuencia']}.")
-                            except:
-                                pass
-                    elif current_weight <= 0:
-                        st.warning("⚠️ **Registra el peso del ejemplar** para obtener una recomendación precisa de alimentación.")
-                    else:
-                        st.info(f"ℹ️ Para {species_name}, consulta guías específicas de alimentación.")
-
-                    # Muda
-                    shed_interval = species_info.get("shed_interval", 30)
-                    if muda and len(muda) > 0:
-                        last_shed_date_str = muda[0].get('fecha')
-                        try:
-                            last_shed_date = datetime.strptime(last_shed_date_str[:10], "%Y-%m-%d")
-                            next_shed_estimated = last_shed_date + timedelta(days=shed_interval)
-                            days_until_shed = (next_shed_estimated - datetime.now()).days
-                            if days_until_shed <= 0:
-                                st.warning(f"🔄 Posible muda inminente (intervalo: {shed_interval} días).")
-                            else:
-                                st.info(f"🔄 Próxima muda estimada en {days_until_shed} días.")
-                        except:
-                            st.info("ℹ️ No se pudo calcular la próxima muda.")
-                    else:
-                        st.info(f"ℹ️ La especie {species_name} muda cada {shed_interval} días aprox.")
-
-                    # Condiciones
-                    temp_min, temp_max = species_info.get("temp_range", (25, 30))
-                    hum = species_info.get("humidity", 50)
-                    st.write(f"🌡️ **Condiciones ideales**: {temp_min}°C - {temp_max}°C, humedad ~{hum}%.")
-                    st.write(f"🍽️ **Dieta general**: {species_info.get('diet', 'N/A')}")
-                    st.write(f"🏠 **Terrario**: {species_info.get('enclosure', 'N/A')}")
-
-                with col_rec2:
-                    adult_weight = species_info.get("adult_weight", 1000)
-                    if current_weight > 0:
-                        progress = min(current_weight / adult_weight, 1.0)
-                        st.metric("📈 Progreso", f"{current_weight}g / {adult_weight}g")
-                        st.progress(progress, text=f"{progress*100:.1f}% adulto")
-                    else:
-                        st.info("Registra peso para ver progreso.")
-
-            st.divider()
-
-            # ---- Gráfico de dieta (omnívoros) ----
-            if species_info.get("diet_type") == "omnivoro":
-                st.subheader("🥗 Variabilidad de la dieta")
-                if alimentacion and len(alimentacion) > 0:
-                    df_alim = pd.DataFrame(alimentacion)
-                    df_alim['categoria'] = df_alim['tipo_alimento'].apply(classify_food)
-                    counts = df_alim['categoria'].value_counts().reset_index()
-                    counts.columns = ['Categoría', 'Conteo']
-                    fig = px.bar(counts, x='Categoría', y='Conteo', color='Categoría',
-                                 title='Distribución de alimentos consumidos',
-                                 labels={'Conteo': 'Número de registros'})
-                    fig.update_layout(template='plotly_dark', showlegend=False)
-                    st.plotly_chart(fig, use_container_width=True)
-
-                    with st.expander("📋 Detalle de alimentos"):
-                        st.dataframe(df_alim[['fecha', 'tipo_alimento', 'categoria']].head(10), use_container_width=True)
-
-                    if 'insecto' not in counts['Categoría'].values:
-                        st.warning("⚠️ No se han registrado insectos. ¡Necesitan proteína animal!")
-                    if 'verdura' not in counts['Categoría'].values:
-                        st.warning("⚠️ No se han registrado verduras. ¡Incluye vegetales de hoja verde!")
-                    if 'fruta' not in counts['Categoría'].values:
-                        st.info("🍎 La fruta puede ofrecerse como premio ocasional.")
-                else:
-                    st.info("Registra alimentaciones para ver la variedad de la dieta.")
-                st.divider()
-
-            # ---- Gráfico de peso ----
-            st.subheader("📈 Evolución de peso")
-            if peso_hist and len(peso_hist) > 0:
-                try:
-                    df_peso = pd.DataFrame(peso_hist)
-                    df_peso['fecha'] = pd.to_datetime(df_peso['fecha']).dt.date
-                    df_peso = df_peso.sort_values('fecha')
-                    fig = px.line(df_peso, x='fecha', y='peso',
-                                  title='Evolución del peso (tabla Peso)',
-                                  labels={'peso': 'Peso (g)', 'fecha': 'Fecha'})
-                    fig.update_layout(template='plotly_dark')
-                    fig.update_xaxes(tickformat="%Y-%m-%d")
-                    st.plotly_chart(fig, use_container_width=True)
-                except Exception as e:
-                    st.info(f"No se pudo generar el gráfico: {str(e)}")
-            elif alimentacion and len(alimentacion) > 0:
-                try:
-                    df_alim = pd.DataFrame(alimentacion)
-                    if 'peso_alimento' in df_alim.columns and not df_alim['peso_alimento'].isnull().all():
-                        df_alim['fecha'] = pd.to_datetime(df_alim['fecha']).dt.date
-                        df_alim = df_alim.sort_values('fecha')
-                        fig = px.line(df_alim, x='fecha', y='peso_alimento',
-                                      title='Evolución del peso (desde alimentación)',
-                                      labels={'peso_alimento': 'Peso (g)', 'fecha': 'Fecha'})
-                        fig.update_layout(template='plotly_dark')
-                        fig.update_xaxes(tickformat="%Y-%m-%d")
-                        st.plotly_chart(fig, use_container_width=True)
-                    else:
-                        st.info("No hay datos de peso en alimentación.")
-                except Exception as e:
-                    st.info(f"No se pudo generar el gráfico: {str(e)}")
-            else:
-                st.info("Registra pesos en 'Registro de Peso' para ver la evolución.")
-
-            # ---- Historial ----
-            st.subheader("📋 Historial completo")
-            tabs = st.tabs(["🍽️ Alimentación", "🔄 Muda", "⚖️ Peso", "🏥 Veterinario"])
-
-            with tabs[0]:
-                if alimentacion:
-                    df = pd.DataFrame(alimentacion)
-                    df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
-                    if 'fecha' in df:
-                        df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
-                    if 'tipo_alimento' in df:
-                        df['categoría'] = df['tipo_alimento'].apply(classify_food)
-                    st.dataframe(df, use_container_width=True, height=300)
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 Descargar CSV", data=csv, file_name=f"alimentacion_{unique_id}.csv", mime="text/csv")
-                else:
-                    st.info("Sin registros de alimentación.")
-
-            with tabs[1]:
-                if muda:
-                    df = pd.DataFrame(muda)
-                    df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
-                    if 'fecha' in df:
-                        df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
-                    st.dataframe(df, use_container_width=True, height=300)
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 Descargar CSV", data=csv, file_name=f"muda_{unique_id}.csv", mime="text/csv")
-                else:
-                    st.info("Sin registros de muda.")
-
-            with tabs[2]:
-                if peso_hist:
-                    df = pd.DataFrame(peso_hist)
-                    df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
-                    if 'fecha' in df:
-                        df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
-                    st.dataframe(df, use_container_width=True, height=300)
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 Descargar CSV", data=csv, file_name=f"peso_{unique_id}.csv", mime="text/csv")
-                else:
-                    st.info("Sin registros de peso.")
-
-            with tabs[3]:
-                if veterinario:
-                    df = pd.DataFrame(veterinario)
-                    df = df.drop(columns=['id', 'unique_id', 'owner_name'], errors='ignore')
-                    if 'fecha' in df:
-                        df['días desde'] = df['fecha'].apply(lambda x: safe_days_between(x) if safe_days_between(x) is not None else '')
-                    st.dataframe(df, use_container_width=True, height=300)
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 Descargar CSV", data=csv, file_name=f"veterinario_{unique_id}.csv", mime="text/csv")
-                else:
-                    st.info("Sin registros veterinarios.")
-
-# ---- NUEVO EJEMPLAR ----
-elif menu == "➕ Nuevo Ejemplar":
-    st.header("➕ Registrar nuevo ejemplar")
-    with st.form("new_reptile", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            name = st.text_input("📛 Nombre")
-            species = st.text_input("🔬 Especie")
-            sex = st.selectbox("⚥ Sexo", ["Macho", "Hembra", "Desconocido"])
-            fase = st.text_input("🧬 Fase / Gen (opcional)", help="Ej: Albino, Pastel, Jaguar, etc.")
+        col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
-            pedimento = st.text_input("📄 Pedimento (opcional)")
-            peso = st.number_input("⚖️ Peso (g)", min_value=0, step=50)
-        notas = st.text_area("📝 Notas adicionales")
-        
-        submitted = st.form_submit_button("💾 Guardar ejemplar", use_container_width=True)
-        if submitted:
-            if species.strip() == "":
-                st.error("La especie es obligatoria.")
-            else:
-                u_id = f"{species[:2].upper()}{random.randint(1000, 9999)}"
-                data = {
-                    "name": name,
-                    "species": species,
-                    "owner_name": st.session_state.username,
-                    "sex": sex,
-                    "unique_id": u_id,
-                    "pedimento": pedimento,
-                    "peso": int(peso),
-                    "notas": notas,
-                    "fase": fase
-                }
-                try:
-                    supabase.table("reptiles").insert(data).execute()
-                    st.success(f"✅ Ejemplar **{u_id}** registrado correctamente.")
-                    st.cache_data.clear()
-                    st.session_state.selected_reptile = u_id
+            if st.button("🚪 Ingresar", use_container_width=True, type="primary"):
+                if username.strip():
+                    st.session_state.authenticated = True
+                    st.session_state.username = username.strip()
                     st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error al guardar: {e}")
-
-# ---- ALIMENTACIÓN ----
-elif menu == "🍽️ Alimentación":
-    st.header("🍽️ Registrar alimentación")
-    reptiles = get_reptiles(st.session_state.username)
-    if not reptiles:
-        st.warning("Primero registra un ejemplar.")
-    else:
-        st.subheader("🦎 Selecciona un ejemplar")
-        item = mostrar_botones_ejemplares(reptiles)
-        
-        if not item:
-            st.warning("Selecciona un ejemplar de los botones arriba.")
-        else:
-            unique_id = item['unique_id']
-            especie = item.get('species', '')
-            species_info = get_species_info(especie)
-            alimentos = species_info.get('alimentos_sugeridos', None)
-
-            with st.form("feed_form"):
-                fecha = st.date_input("📅 Fecha", value=datetime.now())
-                if alimentos:
-                    tipo_alimento = st.selectbox("🍗 Tipo de alimento", alimentos, help="Selecciona de la lista sugerida")
                 else:
-                    tipo_alimento = st.text_input("🍗 Tipo de alimento", help="Escribe el alimento")
-                peso_alimento = st.number_input("⚖️ Peso del alimento (g)", min_value=0, step=5)
-                notas = st.text_area("📝 Notas adicionales (opcional)")
-                submitted = st.form_submit_button("💾 Guardar alimentación")
-                if submitted:
-                    if not tipo_alimento:
-                        st.error("El tipo de alimento es obligatorio.")
-                    else:
+                    st.error("Introduce tu nombre")
+    st.stop()
+
+# ============================================================
+# NAVEGACIÓN INFERIOR (BOTTOM NAV BAR)
+# ============================================================
+def render_bottom_nav():
+    pages = [
+        ("dashboard", "🏠", "Inicio"),
+        ("reptiles", "🦎", "Mis Reptiles"),
+        ("add", "➕", "Agregar"),
+        ("stats", "📊", "Estadísticas"),
+        ("settings", "⚙️", "Ajustes")
+    ]
+
+    nav_html = '<div class="bottom-nav">'
+    for page_id, icon, label in pages:
+        active = "active" if st.session_state.current_page == page_id else ""
+        nav_html += f'<button class="bottom-nav-item {active}" onclick="handleNav('{page_id}')">'
+        nav_html += f'<span class="icon">{icon}</span><span>{label}</span></button>'
+    nav_html += '</div>'
+
+    # JavaScript para manejar clicks
+    nav_html += """
+    <script>
+    function handleNav(page) {
+        const buttons = document.querySelectorAll('.bottom-nav-item');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        // Streamlit no permite JS directo, usamos un workaround con st.query_params
+        window.parent.postMessage({type: 'streamlit:setComponentValue', value: page}, '*');
+    }
+    </script>
+    """
+    st.markdown(nav_html, unsafe_allow_html=True)
+
+# ============================================================
+# HEADER CON BÚSQUEDA
+# ============================================================
+def render_header(title, show_search=False):
+    st.markdown(f'<h2 style="margin-top:0.5rem; margin-bottom:0.5rem; padding:0 1rem;">{title}</h2>', unsafe_allow_html=True)
+
+    if show_search:
+        search = st.text_input("🔍 Buscar ejemplar...", 
+                              value=st.session_state.search_query,
+                              key="search_input",
+                              label_visibility="collapsed",
+                              placeholder="🔍 Buscar por nombre o especie...")
+        st.session_state.search_query = search
+        return search
+    return ""
+
+# ============================================================
+# CARDS DE REPTIL (TÁCTILES Y GRANDES)
+# ============================================================
+def render_reptile_card(reptile, is_selected=False):
+    selected_class = "selected" if is_selected else ""
+    name = reptile.get('name', 'Sin nombre')
+    species = reptile.get('species', 'N/A')
+    sex = reptile.get('sex', 'Desconocido')
+    peso = safe_int(reptile.get('peso'))
+    fase = reptile.get('fase', '')
+
+    badge = f'<span class="badge">{sex}</span>' if sex != 'Desconocido' else ''
+    weight_text = f"{peso}g" if peso > 0 else "Sin peso"
+
+    card_html = f"""
+    <div class="reptile-card {selected_class}">
+        <h3>🐍 {name}</h3>
+        <p class="meta">{species} • {weight_text}</p>
+        {badge}
+        {f'<span class="badge" style="margin-left:0.3rem">{fase}</span>' if fase else ''}
+    </div>
+    """
+    return card_html
+
+# ============================================================
+# STEPPER PARA FORMULARIOS
+# ============================================================
+def render_stepper(current_step, total_steps, labels):
+    html = '<div class="stepper">'
+    for i in range(1, total_steps + 1):
+        status = "completed" if i < current_step else "active" if i == current_step else ""
+        html += f'<div class="step {status}"><div class="step-circle">{i}</div><span class="step-label">{labels[i-1]}</span></div>'
+        if i < total_steps:
+            line_status = "completed" if i < current_step else ""
+            html += f'<div class="step-line {line_status}"></div>'
+    html += '</div>'
+    st.markdown(html, unsafe_allow_html=True)
+
+# ============================================================
+# METRICS GRID
+# ============================================================
+def render_metric_grid(metrics):
+    """metrics: lista de dicts con 'label', 'value', 'status' (opt)"""
+    html = '<div class="metric-grid">'
+    for m in metrics:
+        status = m.get('status', '')
+        html += f"""
+        <div class="metric-card {status}">
+            <div class="label">{m['label']}</div>
+            <div class="value">{m['value']}</div>
+        </div>
+        """
+    html += '</div>'
+    st.markdown(html, unsafe_allow_html=True)
+
+# ============================================================
+# CONTENIDO PRINCIPAL
+# ============================================================
+st.markdown('<div class="main-content">', unsafe_allow_html=True)
+
+# ---- PÁGINA: DASHBOARD ----
+if st.session_state.current_page == "dashboard":
+    render_header("📊 Panel de Control")
+
+    reptiles = get_reptiles(st.session_state.username)
+
+    if not reptiles:
+        st.info("🦎 No tienes ejemplares registrados. Toca ➕ para agregar uno.")
+    else:
+        # Quick stats scrollable
+        total = len(reptiles)
+        species_count = len(set(r.get('species', '') for r in reptiles))
+
+        st.markdown(f"""
+        <div class="quick-stats">
+            <div class="quick-stat-pill">🦎 <strong>{total}</strong> ejemplares</div>
+            <div class="quick-stat-pill">🔬 <strong>{species_count}</strong> especies</div>
+            <div class="quick-stat-pill">👤 {st.session_state.username}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.subheader("🦎 Últimos ejemplares")
+
+        # Mostrar cards de reptiles (máximo 4 en dashboard)
+        for reptile in reptiles[:4]:
+            is_selected = st.session_state.selected_reptile == reptile['unique_id']
+            st.markdown(render_reptile_card(reptile, is_selected), unsafe_allow_html=True)
+
+            # Botón invisible encima del card para capturar click
+            if st.button(f"Ver {reptile.get('name', 'Reptil')}", 
+                        key=f"dash_btn_{reptile['unique_id']}",
+                        use_container_width=True):
+                st.session_state.selected_reptile = reptile['unique_id']
+                st.session_state.current_page = "reptiles"
+                st.rerun()
+
+        if len(reptiles) > 4:
+            if st.button("Ver todos mis reptiles →", use_container_width=True):
+                st.session_state.current_page = "reptiles"
+                st.rerun()
+
+        # Alertas rápidas
+        st.subheader("🔔 Alertas")
+        alertas = []
+        for r in reptiles:
+            alim = get_events("alimentacion", r['unique_id'])
+            if alim and len(alim) > 0:
+                dias = safe_days_between(alim[0].get('fecha'))
+                if dias and dias > 10:
+                    alertas.append(f"⚠️ **{r.get('name')}** lleva {dias} días sin comer")
+
+        if alertas:
+            for alerta in alertas[:3]:
+                st.warning(alerta)
+        else:
+            st.success("✅ Todo en orden. Sin alertas pendientes.")
+
+# ---- PÁGINA: MIS REPTILES ----
+elif st.session_state.current_page == "reptiles":
+    search = render_header("🦎 Mis Reptiles", show_search=True)
+
+    reptiles = get_reptiles(st.session_state.username)
+
+    if not reptiles:
+        st.info("No hay ejemplares. Toca ➕ para agregar uno.")
+    else:
+        # Filtrar por búsqueda
+        filtered = [r for r in reptiles if search.lower() in r.get('name','').lower() 
+                    or search.lower() in r.get('species','').lower()] if search else reptiles
+
+        if not filtered:
+            st.info("🔍 No se encontraron resultados")
+        else:
+            for reptile in filtered:
+                is_selected = st.session_state.selected_reptile == reptile['unique_id']
+                st.markdown(render_reptile_card(reptile, is_selected), unsafe_allow_html=True)
+
+                if st.button(f"Seleccionar {reptile.get('name', 'Reptil')}", 
+                            key=f"rept_btn_{reptile['unique_id']}",
+                            use_container_width=True):
+                    st.session_state.selected_reptile = reptile['unique_id']
+                    st.rerun()
+
+            # Si hay seleccionado, mostrar detalle
+            if st.session_state.selected_reptile:
+                selected = next((r for r in reptiles if r['unique_id'] == st.session_state.selected_reptile), None)
+                if selected:
+                    st.divider()
+                    st.subheader(f"📋 {selected.get('name', 'Reptil')}")
+
+                    # Métricas
+                    species_info = get_species_info(selected.get('species', ''), safe_int(selected.get('peso')))
+                    alim = get_events("alimentacion", selected['unique_id'])
+                    muda = get_events("muda", selected['unique_id'])
+                    peso_hist = get_peso_history(selected['unique_id'])
+
+                    dias_alim = safe_days_between(alim[0].get('fecha')) if alim else None
+                    dias_muda = safe_days_between(muda[0].get('fecha')) if muda else None
+
+                    metrics = [
+                        {"label": "Peso", "value": f"{safe_int(selected.get('peso'))}g"},
+                        {"label": "Alimentación", "value": f"Hace {dias_alim}d" if dias_alim is not None else "Sin datos", 
+                         "status": "warning" if dias_alim and dias_alim > 10 else ""},
+                        {"label": "Muda", "value": f"Hace {dias_muda}d" if dias_muda is not None else "Sin datos"},
+                        {"label": "Especie", "value": selected.get('species', 'N/A')[:10]}
+                    ]
+                    render_metric_grid(metrics)
+
+                    # Tabs de detalle
+                    tabs = st.tabs(["🍽️ Alim", "🔄 Muda", "⚖️ Peso", "🏥 Vet"])
+
+                    with tabs[0]:
+                        if alim:
+                            df = pd.DataFrame(alim[:5])
+                            df['días'] = df['fecha'].apply(lambda x: safe_days_between(x))
+                            st.dataframe(df[['fecha', 'tipo_alimento', 'días']], use_container_width=True, hide_index=True)
+                        else:
+                            st.info("Sin registros")
+
+                    with tabs[1]:
+                        if muda:
+                            df = pd.DataFrame(muda[:5])
+                            df['días'] = df['fecha'].apply(lambda x: safe_days_between(x))
+                            st.dataframe(df[['fecha', 'comentarios', 'días']], use_container_width=True, hide_index=True)
+                        else:
+                            st.info("Sin registros")
+
+                    with tabs[2]:
+                        if peso_hist and len(peso_hist) > 1:
+                            df = pd.DataFrame(peso_hist)
+                            df['fecha'] = pd.to_datetime(df['fecha'])
+                            fig = px.line(df, x='fecha', y='peso', 
+                                        title='Evolución de peso',
+                                        template='plotly_dark')
+                            fig.update_layout(margin=dict(l=20, r=20, t=40, b=20),
+                                            paper_bgcolor='rgba(0,0,0,0)',
+                                            plot_bgcolor='rgba(0,0,0,0)')
+                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                        else:
+                            st.info("Registra pesos para ver evolución")
+
+                    with tabs[3]:
+                        vet = get_events("veterinario", selected['unique_id'])
+                        if vet:
+                            df = pd.DataFrame(vet[:5])
+                            st.dataframe(df[['fecha', 'evaluacion_medica']], use_container_width=True, hide_index=True)
+                        else:
+                            st.info("Sin registros")
+
+                    # Acciones rápidas
+                    st.subheader("⚡ Acciones rápidas")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        if st.button("🍽️ Alimentar", use_container_width=True):
+                            st.session_state.current_page = "add"
+                            st.session_state.add_type = "alimentacion"
+                            st.rerun()
+                    with col2:
+                        if st.button("⚖️ Pesar", use_container_width=True):
+                            st.session_state.current_page = "add"
+                            st.session_state.add_type = "peso"
+                            st.rerun()
+                    with col3:
+                        if st.button("🔄 Muda", use_container_width=True):
+                            st.session_state.current_page = "add"
+                            st.session_state.add_type = "muda"
+                            st.rerun()
+
+# ---- PÁGINA: AGREGAR (CON STEPPER) ----
+elif st.session_state.current_page == "add":
+    add_type = st.session_state.get("add_type", "reptil")
+
+    if add_type == "reptil":
+        render_header("➕ Nuevo Ejemplar")
+        render_stepper(st.session_state.step, 3, ["Datos", "Detalles", "Confirmar"])
+
+        with st.form("new_reptile_step"):
+            if st.session_state.step == 1:
+                name = st.text_input("📛 Nombre *", placeholder="Ej: Medusa")
+                species = st.selectbox("🔬 Especie *", list(SPECIES_DB.keys()) + ["Otra"])
+                if species == "Otra":
+                    species = st.text_input("Especifica la especie")
+                sex = st.selectbox("⚥ Sexo", ["Macho", "Hembra", "Desconocido"])
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("Siguiente →", use_container_width=True):
+                        if name and species:
+                            st.session_state.temp_reptile = {"name": name, "species": species, "sex": sex}
+                            st.session_state.step = 2
+                            st.rerun()
+                        else:
+                            st.error("Nombre y especie son obligatorios")
+                with col2:
+                    if st.form_submit_button("Cancelar", use_container_width=True, type="secondary"):
+                        st.session_state.step = 1
+                        st.session_state.current_page = "dashboard"
+                        st.rerun()
+
+            elif st.session_state.step == 2:
+                temp = st.session_state.get("temp_reptile", {})
+                fase = st.text_input("🧬 Fase / Gen (opcional)", placeholder="Ej: Albino, Pastel")
+                pedimento = st.text_input("📄 Pedimento (opcional)")
+                peso = st.number_input("⚖️ Peso inicial (g)", min_value=0, step=50)
+                notas = st.text_area("📝 Notas")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("← Anterior", use_container_width=True):
+                        st.session_state.step = 1
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("Siguiente →", use_container_width=True):
+                        temp.update({"fase": fase, "pedimento": pedimento, "peso": int(peso), "notas": notas})
+                        st.session_state.temp_reptile = temp
+                        st.session_state.step = 3
+                        st.rerun()
+
+            elif st.session_state.step == 3:
+                temp = st.session_state.get("temp_reptile", {})
+                st.write("**Resumen:**")
+                st.write(f"📛 Nombre: {temp.get('name')}")
+                st.write(f"🔬 Especie: {temp.get('species')}")
+                st.write(f"⚥ Sexo: {temp.get('sex')}")
+                st.write(f"⚖️ Peso: {temp.get('peso', 0)}g")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("← Anterior", use_container_width=True):
+                        st.session_state.step = 2
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("💾 Guardar", use_container_width=True):
+                        u_id = f"{temp['species'][:2].upper()}{random.randint(1000,9999)}"
                         data = {
-                            "unique_id": unique_id,
+                            "name": temp.get('name'),
+                            "species": temp.get('species'),
                             "owner_name": st.session_state.username,
-                            "fecha": str(fecha),
-                            "tipo_alimento": tipo_alimento,
-                            "peso_alimento": int(peso_alimento)
+                            "sex": temp.get('sex'),
+                            "unique_id": u_id,
+                            "pedimento": temp.get('pedimento', ''),
+                            "peso": temp.get('peso', 0),
+                            "notas": temp.get('notas', ''),
+                            "fase": temp.get('fase', '')
                         }
                         try:
-                            supabase.table("alimentacion").insert(data).execute()
-                            st.success("✅ Alimentación registrada.")
+                            supabase.table("reptiles").insert(data).execute()
+                            st.session_state.step = 1
+                            st.session_state.temp_reptile = {}
+                            st.session_state.selected_reptile = u_id
+                            st.session_state.current_page = "reptiles"
                             st.cache_data.clear()
-                        except Exception as e:
-                            st.error(f"❌ Error: {e}")
-
-# ---- MUDA ----
-elif menu == "🔄 Muda":
-    st.header("🔄 Registrar muda")
-    reptiles = get_reptiles(st.session_state.username)
-    if not reptiles:
-        st.warning("Primero registra un ejemplar.")
-    else:
-        st.subheader("🦎 Selecciona un ejemplar")
-        item = mostrar_botones_ejemplares(reptiles)
-        
-        if not item:
-            st.warning("Selecciona un ejemplar de los botones arriba.")
-        else:
-            unique_id = item['unique_id']
-            with st.form("shed_form"):
-                fecha = st.date_input("📅 Fecha", value=datetime.now())
-                comentarios = st.text_area("📝 Observaciones sobre la muda")
-                submitted = st.form_submit_button("💾 Guardar muda")
-                if submitted:
-                    data = {
-                        "unique_id": unique_id,
-                        "owner_name": st.session_state.username,
-                        "fecha": str(fecha),
-                        "comentarios": comentarios
-                    }
-                    try:
-                        supabase.table("muda").insert(data).execute()
-                        st.success("✅ Muda registrada.")
-                        st.cache_data.clear()
-                    except Exception as e:
-                        st.error(f"❌ Error: {e}")
-
-# ---- REGISTRO DE PESO ----
-elif menu == "⚖️ Registro de Peso":
-    st.header("⚖️ Registrar peso del ejemplar")
-    reptiles = get_reptiles(st.session_state.username)
-    if not reptiles:
-        st.warning("Primero registra un ejemplar.")
-    else:
-        st.subheader("🦎 Selecciona un ejemplar")
-        item = mostrar_botones_ejemplares(reptiles)
-        
-        if not item:
-            st.warning("Selecciona un ejemplar de los botones arriba.")
-        else:
-            unique_id = item['unique_id']
-            current_peso = safe_int(item.get('peso'))
-            st.info(f"Peso actual registrado: **{current_peso} g**")
-            with st.form("peso_form"):
-                fecha = st.date_input("📅 Fecha", value=datetime.now())
-                nuevo_peso = st.number_input("⚖️ Nuevo peso (g)", min_value=0, step=10, value=current_peso)
-                notas = st.text_area("📝 Notas (opcional)")
-                submitted = st.form_submit_button("💾 Guardar peso")
-                if submitted:
-                    if nuevo_peso <= 0:
-                        st.error("El peso debe ser mayor a 0.")
-                    else:
-                        try:
-                            data_peso = {
-                                "unique_id": unique_id,
-                                "owner_name": st.session_state.username,
-                                "fecha": str(fecha),
-                                "peso": int(nuevo_peso),
-                                "notas": notas
-                            }
-                            supabase.table("peso").insert(data_peso).execute()
-                            supabase.table("reptiles").update({"peso": int(nuevo_peso)}).eq("unique_id", unique_id).execute()
-                            st.success(f"✅ Peso actualizado: {nuevo_peso} g")
-                            st.cache_data.clear()
+                            st.success(f"✅ {temp.get('name')} registrado!")
+                            time.sleep(1)
                             st.rerun()
                         except Exception as e:
-                            st.error(f"❌ Error al guardar peso: {e}")
+                            st.error(f"Error: {e}")
 
-# ---- VETERINARIO ----
-elif menu == "🏥 Veterinario":
-    st.header("🏥 Registrar visita veterinaria")
-    reptiles = get_reptiles(st.session_state.username)
-    if not reptiles:
-        st.warning("Primero registra un ejemplar.")
-    else:
-        st.subheader("🦎 Selecciona un ejemplar")
-        item = mostrar_botones_ejemplares(reptiles)
-        
-        if not item:
-            st.warning("Selecciona un ejemplar de los botones arriba.")
+    elif add_type == "alimentacion":
+        render_header("🍽️ Alimentación")
+        reptiles = get_reptiles(st.session_state.username)
+
+        if not reptiles:
+            st.warning("Primero registra un ejemplar")
         else:
-            unique_id = item['unique_id']
-            with st.form("vet_form"):
-                fecha = st.date_input("📅 Fecha", value=datetime.now())
-                evaluacion = st.text_area("🩺 Evaluación médica")
-                tratamiento = st.text_input("💊 Tratamiento recetado")
-                proxima_cita = st.date_input("📅 Próxima cita (opcional)", value=None)
-                submitted = st.form_submit_button("💾 Guardar registro")
-                if submitted:
-                    data = {
-                        "unique_id": unique_id,
-                        "owner_name": st.session_state.username,
-                        "fecha": str(fecha),
-                        "evaluacion_medica": evaluacion,
-                        "tratamiento": tratamiento,
-                        "proxima_cita": str(proxima_cita) if proxima_cita else None
-                    }
-                    try:
-                        supabase.table("veterinario").insert(data).execute()
-                        st.success("✅ Registro veterinario guardado.")
-                        st.cache_data.clear()
-                    except Exception as e:
-                        st.error(f"❌ Error: {e}")
-
-# ---- CONFIGURACIÓN (TOKEN DE VOICE MONKEY + WEBHOOK HA) ----
-elif menu == "⚙️ Configuración":
-    st.header("⚙️ Configuración de notificaciones")
-    
-    config = obtener_config_usuario(st.session_state.username)
-    token_actual = config.get("token_voice_monkey")
-    webhook_actual = config.get("webhook_ha")
-    
-    # ---- SECCIÓN VOICE MONKEY (Alexa) ----
-    st.markdown("""
-    <div class="config-section">
-        <h4>🔊 Alexa (Voice Monkey)</h4>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    if token_actual:
-        st.success("✅ Token de Voice Monkey configurado")
-        st.info(f"Token actual: `{token_actual[:8]}...{token_actual[-4:]}` (oculto)")
-    else:
-        st.warning("⚠️ Token de Voice Monkey no configurado")
-    
-    col_vm1, col_vm2 = st.columns([3, 1])
-    with col_vm1:
-        with st.form("token_form"):
-            st.markdown("""
-            **📢 Notificaciones por Alexa**
-            
-            1. Ve a [Voice Monkey](https://voicemonkey.io) y regístrate.
-            2. Vincula tu cuenta de Amazon (habilita la skill de Voice Monkey).
-            3. Ve a **Settings → API Credentials** y copia tu **"Secret Token"**.
-            """)
-            token_input = st.text_input("🔑 Token de Voice Monkey", type="password", placeholder="Ej: abc123def456...")
-            submitted_token = st.form_submit_button("💾 Guardar token", use_container_width=True)
-            
-            if submitted_token:
-                if token_input.strip():
-                    if guardar_config_usuario(st.session_state.username, token_voice_monkey=token_input.strip()):
-                        st.success("✅ Token guardado correctamente. ¡Ya recibirás notificaciones en tu Alexa!")
-                        st.cache_data.clear()
-                        st.rerun()
-                    else:
-                        st.error("❌ Error al guardar token.")
-                else:
-                    st.error("El token no puede estar vacío.")
-    
-    with col_vm2:
-        if token_actual:
-            if st.button("🗑️ Eliminar token", key="del_token", use_container_width=True):
-                if eliminar_config_usuario(st.session_state.username, "token"):
-                    st.success("🗑️ Token eliminado.")
-                    st.cache_data.clear()
+            # Selector de reptil con cards
+            st.subheader("Selecciona un ejemplar")
+            for r in reptiles[:5]:
+                if st.button(f"{r.get('name')} ({r.get('species')})", 
+                           key=f"feed_sel_{r['unique_id']}", use_container_width=True):
+                    st.session_state.feed_reptile = r['unique_id']
                     st.rerun()
-                else:
-                    st.error("Error al eliminar token.")
-    
-    # ---- SECCIÓN HOME ASSISTANT ----
-    st.markdown("""
-    <div class="config-section">
-        <h4>🏠 Home Assistant</h4>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    if webhook_actual:
-        st.success("✅ Webhook de Home Assistant configurado")
-        st.info(f"URL: `{webhook_actual}`")
-    else:
-        st.warning("⚠️ Webhook de Home Assistant no configurado")
-    
-    col_ha1, col_ha2 = st.columns([3, 1])
-    with col_ha1:
-        with st.form("webhook_form"):
-            st.markdown("""
-            **📲 Notificaciones por Home Assistant**
-            
-            1. Crea una automatización en Home Assistant con trigger **Webhook**.
-            2. Copia el ID del webhook (ej: `-bJwerBoOVrL27UuEY227tFZ2O`).
-            3. Construye la URL completa:
-               - Si usas Nabu Casa: `https://xxxxxx.ui.nabu.casa/api/webhook/TU_ID`
-               - Si es local: `http://192.168.1.100:8123/api/webhook/TU_ID`
-            """)
-            webhook_input = st.text_input("🔗 URL del Webhook de HA", placeholder="https://xxxxxx.ui.nabu.casa/api/webhook/TU_ID", value=webhook_actual if webhook_actual else "")
-            submitted_webhook = st.form_submit_button("💾 Guardar webhook", use_container_width=True)
-            
-            if submitted_webhook:
-                if webhook_input.strip():
-                    if guardar_config_usuario(st.session_state.username, webhook_ha=webhook_input.strip()):
-                        st.success("✅ Webhook guardado correctamente. ¡Ya recibirás notificaciones en Home Assistant!")
-                        st.cache_data.clear()
-                        st.rerun()
-                    else:
-                        st.error("❌ Error al guardar webhook.")
-                else:
-                    st.error("La URL del webhook no puede estar vacía.")
-    
-    with col_ha2:
-        if webhook_actual:
-            if st.button("🗑️ Eliminar webhook", key="del_webhook", use_container_width=True):
-                if eliminar_config_usuario(st.session_state.username, "webhook"):
-                    st.success("🗑️ Webhook eliminado.")
-                    st.cache_data.clear()
-                    st.rerun()
-                else:
-                    st.error("Error al eliminar webhook.")
-    
-    # ---- PRUEBA DE NOTIFICACIONES DUAL ----
-    st.divider()
-    st.subheader("🧪 Probar ambos sistemas")
-    
-    with st.form("test_dual"):
-        mensaje_test = st.text_input("Mensaje de prueba", value="¡Hola! Esta es una notificación de prueba desde RIARE Exotic's.")
-        submitted_test = st.form_submit_button("🔊 Enviar prueba a Alexa y HA")
-        if submitted_test:
-            with st.spinner("Enviando notificaciones de prueba..."):
-                resultados = enviar_notificaciones_dual(mensaje_test, st.session_state.username, "Prueba RIARE")
-                
-                # Mostrar resultados de Alexa
-                if resultados["alexa"]["enviado"]:
-                    st.success(f"✅ Alexa: {resultados['alexa']['mensaje']}")
-                else:
-                    st.info(f"ℹ️ Alexa: {resultados['alexa']['mensaje']}")
-                
-                # Mostrar resultados de HA
-                if resultados["ha"]["enviado"]:
-                    st.success(f"✅ HA: {resultados['ha']['mensaje']}")
-                else:
-                    st.info(f"ℹ️ HA: {resultados['ha']['mensaje']}")
-                
-                if not resultados["alexa"]["enviado"] and not resultados["ha"]["enviado"]:
-                    st.warning("⚠️ No has configurado ningún sistema de notificaciones. Ve a las secciones de arriba para configurar.")
 
-# ---- ESTADÍSTICAS GLOBALES ----
-elif menu == "📈 Estadísticas Globales":
-    st.header("📈 Estadísticas globales")
+            feed_id = st.session_state.get("feed_reptile")
+            if feed_id:
+                reptile = next((r for r in reptiles if r['unique_id'] == feed_id), None)
+                if reptile:
+                    species_info = get_species_info(reptile.get('species'))
+                    alimentos = species_info.get('alimentos_sugeridos', ["Otro"])
+
+                    with st.form("feed_form"):
+                        st.markdown(f"**Registrando alimentación para: {reptile.get('name')}**")
+                        fecha = st.date_input("📅 Fecha", value=datetime.now())
+                        tipo = st.selectbox("🍗 Alimento", alimentos)
+                        peso_alim = st.number_input("⚖️ Peso (g)", min_value=0, step=5)
+                        notas = st.text_area("📝 Notas")
+
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.form_submit_button("Cancelar", use_container_width=True):
+                                st.session_state.feed_reptile = None
+                                st.rerun()
+                        with col2:
+                            if st.form_submit_button("💾 Guardar", use_container_width=True):
+                                data = {
+                                    "unique_id": feed_id,
+                                    "owner_name": st.session_state.username,
+                                    "fecha": str(fecha),
+                                    "tipo_alimento": tipo,
+                                    "peso_alimento": int(peso_alim)
+                                }
+                                try:
+                                    supabase.table("alimentacion").insert(data).execute()
+                                    st.session_state.feed_reptile = None
+                                    st.cache_data.clear()
+                                    st.success("✅ Registrado!")
+                                    time.sleep(1)
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Error: {e}")
+
+    elif add_type == "peso":
+        render_header("⚖️ Registro de Peso")
+        reptiles = get_reptiles(st.session_state.username)
+
+        if not reptiles:
+            st.warning("Primero registra un ejemplar")
+        else:
+            st.subheader("Selecciona un ejemplar")
+            for r in reptiles[:5]:
+                current = safe_int(r.get('peso'))
+                if st.button(f"{r.get('name')} (Actual: {current}g)", 
+                           key=f"weight_sel_{r['unique_id']}", use_container_width=True):
+                    st.session_state.weight_reptile = r['unique_id']
+                    st.rerun()
+
+            weight_id = st.session_state.get("weight_reptile")
+            if weight_id:
+                reptile = next((r for r in reptiles if r['unique_id'] == weight_id), None)
+                if reptile:
+                    current = safe_int(reptile.get('peso'))
+                    with st.form("weight_form"):
+                        st.markdown(f"**{reptile.get('name')}** - Peso actual: {current}g")
+                        fecha = st.date_input("📅 Fecha", value=datetime.now())
+                        nuevo = st.number_input("⚖️ Nuevo peso (g)", min_value=0, step=10, value=current)
+                        notas = st.text_area("📝 Notas")
+
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.form_submit_button("Cancelar", use_container_width=True):
+                                st.session_state.weight_reptile = None
+                                st.rerun()
+                        with col2:
+                            if st.form_submit_button("💾 Guardar", use_container_width=True):
+                                try:
+                                    supabase.table("peso").insert({
+                                        "unique_id": weight_id,
+                                        "owner_name": st.session_state.username,
+                                        "fecha": str(fecha),
+                                        "peso": int(nuevo),
+                                        "notas": notas
+                                    }).execute()
+                                    supabase.table("reptiles").update({"peso": int(nuevo)}).eq("unique_id", weight_id).execute()
+                                    st.session_state.weight_reptile = None
+                                    st.cache_data.clear()
+                                    st.success("✅ Peso actualizado!")
+                                    time.sleep(1)
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Error: {e}")
+
+    elif add_type == "muda":
+        render_header("🔄 Registrar Muda")
+        reptiles = get_reptiles(st.session_state.username)
+
+        if not reptiles:
+            st.warning("Primero registra un ejemplar")
+        else:
+            st.subheader("Selecciona un ejemplar")
+            for r in reptiles[:5]:
+                if st.button(f"{r.get('name')} ({r.get('species')})", 
+                           key=f"shed_sel_{r['unique_id']}", use_container_width=True):
+                    st.session_state.shed_reptile = r['unique_id']
+                    st.rerun()
+
+            shed_id = st.session_state.get("shed_reptile")
+            if shed_id:
+                reptile = next((r for r in reptiles if r['unique_id'] == shed_id), None)
+                if reptile:
+                    with st.form("shed_form"):
+                        st.markdown(f"**{reptile.get('name')}**")
+                        fecha = st.date_input("📅 Fecha", value=datetime.now())
+                        comentarios = st.text_area("📝 Observaciones")
+
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.form_submit_button("Cancelar", use_container_width=True):
+                                st.session_state.shed_reptile = None
+                                st.rerun()
+                        with col2:
+                            if st.form_submit_button("💾 Guardar", use_container_width=True):
+                                try:
+                                    supabase.table("muda").insert({
+                                        "unique_id": shed_id,
+                                        "owner_name": st.session_state.username,
+                                        "fecha": str(fecha),
+                                        "comentarios": comentarios
+                                    }).execute()
+                                    st.session_state.shed_reptile = None
+                                    st.cache_data.clear()
+                                    st.success("✅ Muda registrada!")
+                                    time.sleep(1)
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Error: {e}")
+
+    else:
+        # Menú de selección de tipo
+        render_header("➕ ¿Qué deseas registrar?")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🦎 Nuevo Reptil", use_container_width=True):
+                st.session_state.add_type = "reptil"
+                st.rerun()
+            if st.button("🍽️ Alimentación", use_container_width=True):
+                st.session_state.add_type = "alimentacion"
+                st.rerun()
+        with col2:
+            if st.button("⚖️ Peso", use_container_width=True):
+                st.session_state.add_type = "peso"
+                st.rerun()
+            if st.button("🔄 Muda", use_container_width=True):
+                st.session_state.add_type = "muda"
+                st.rerun()
+        if st.button("🏥 Veterinario", use_container_width=True):
+            st.session_state.add_type = "veterinario"
+            st.rerun()
+
+# ---- PÁGINA: ESTADÍSTICAS ----
+elif st.session_state.current_page == "stats":
+    render_header("📊 Estadísticas")
     reptiles = get_reptiles(st.session_state.username)
+
     if not reptiles:
-        st.info("No hay ejemplares para mostrar estadísticas.")
+        st.info("No hay datos para mostrar")
     else:
         total = len(reptiles)
-        st.metric("📊 Total de ejemplares", total)
+        st.metric("Total de ejemplares", total)
 
+        # Gráfico de especies
         df_species = pd.DataFrame(reptiles)
         if 'species' in df_species.columns:
-            species_counts = df_species['species'].value_counts().reset_index()
-            species_counts.columns = ['Especie', 'Cantidad']
-            fig = px.bar(species_counts, x='Especie', y='Cantidad', title='Distribución por especie')
-            fig.update_layout(template='plotly_dark')
-            st.plotly_chart(fig, use_container_width=True)
+            counts = df_species['species'].value_counts().reset_index()
+            counts.columns = ['Especie', 'Cantidad']
+            fig = px.bar(counts, x='Especie', y='Cantidad', 
+                        color='Cantidad', color_continuous_scale='Greens',
+                        template='plotly_dark')
+            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                            margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
+        # Gráfico de sexo
         if 'sex' in df_species.columns:
             sex_counts = df_species['sex'].value_counts().reset_index()
             sex_counts.columns = ['Sexo', 'Cantidad']
-            fig2 = px.pie(sex_counts, names='Sexo', values='Cantidad', title='Proporción por sexo')
-            fig2.update_layout(template='plotly_dark')
-            st.plotly_chart(fig2, use_container_width=True)
+            fig2 = px.pie(sex_counts, names='Sexo', values='Cantidad', 
+                         hole=0.4, template='plotly_dark')
+            fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', 
+                             margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
 
-        if 'peso' in df_species.columns and 'species' in df_species.columns:
-            avg_weight = df_species.groupby('species')['peso'].mean().reset_index()
-            avg_weight.columns = ['Especie', 'Peso promedio (g)']
-            fig3 = px.bar(avg_weight, x='Especie', y='Peso promedio (g)', title='Peso promedio por especie')
-            fig3.update_layout(template='plotly_dark')
-            st.plotly_chart(fig3, use_container_width=True)
+# ---- PÁGINA: AJUSTES ----
+elif st.session_state.current_page == "settings":
+    render_header("⚙️ Configuración")
 
-        if 'fase' in df_species.columns:
-            fase_counts = df_species['fase'].value_counts().reset_index()
-            fase_counts.columns = ['Fase', 'Cantidad']
-            fig_fase = px.bar(fase_counts, x='Fase', y='Cantidad', title='Distribución por fase/gen')
-            fig_fase.update_layout(template='plotly_dark')
-            st.plotly_chart(fig_fase, use_container_width=True)
+    # Tabs para organizar
+    tab1, tab2, tab3 = st.tabs(["🔊 Notificaciones", "👤 Cuenta", "ℹ️ Info"])
 
-        st.subheader("📅 Actividad reciente")
-        all_events = []
-        for table in ["alimentacion", "muda", "veterinario", "peso"]:
-            for r in reptiles:
-                uid = r['unique_id']
-                data = get_events(table, uid) if table != "peso" else get_peso_history(uid)
-                for ev in data:
-                    all_events.append({
-                        'fecha': ev.get('fecha'),
-                        'tipo': table,
-                        'unique_id': uid
-                    })
-        if all_events:
-            df_events = pd.DataFrame(all_events)
-            df_events = df_events.dropna(subset=['fecha'])
-            if not df_events.empty:
-                df_events['fecha'] = pd.to_datetime(df_events['fecha'])
-                df_events['mes'] = df_events['fecha'].dt.to_period('M').astype(str)
-                monthly = df_events.groupby(['mes', 'tipo']).size().reset_index(name='count')
-                fig4 = px.bar(monthly, x='mes', y='count', color='tipo',
-                              title='Eventos por mes y tipo',
-                              labels={'mes': 'Mes', 'count': 'Número de eventos'})
-                fig4.update_layout(template='plotly_dark')
-                st.plotly_chart(fig4, use_container_width=True)
-            else:
-                st.info("No hay eventos con fechas válidas.")
+    with tab1:
+        config = obtener_config_usuario(st.session_state.username)
+
+        st.subheader("🔊 Alexa (Voice Monkey)")
+        if config.get("token_voice_monkey"):
+            st.success("✅ Configurado")
+            if st.button("🗑️ Eliminar token"):
+                if st.checkbox("¿Confirmar eliminación?"):
+                    guardar_config_usuario(st.session_state.username, token_voice_monkey=None)
+                    st.rerun()
         else:
-            st.info("No hay eventos registrados aún.")
+            st.info("No configurado")
+
+        with st.form("token_form"):
+            token = st.text_input("Token de Voice Monkey", type="password")
+            if st.form_submit_button("💾 Guardar"):
+                if token:
+                    guardar_config_usuario(st.session_state.username, token_voice_monkey=token)
+                    st.success("Token guardado")
+                    st.rerun()
+
+        st.subheader("🏠 Home Assistant")
+        if config.get("webhook_ha"):
+            st.success("✅ Configurado")
+        else:
+            st.info("No configurado")
+
+        with st.form("webhook_form"):
+            webhook = st.text_input("URL del Webhook")
+            if st.form_submit_button("💾 Guardar"):
+                if webhook:
+                    guardar_config_usuario(st.session_state.username, webhook_ha=webhook)
+                    st.success("Webhook guardado")
+                    st.rerun()
+
+        # Test
+        st.subheader("🧪 Probar notificaciones")
+        if st.button("Enviar prueba", use_container_width=True):
+            msg = "Prueba desde RIARE Exotic's"
+            r1 = enviar_notificacion_alexa(msg, st.session_state.username)
+            r2 = enviar_notificacion_ha(msg, st.session_state.username)
+            st.write(f"Alexa: {r1[1]}")
+            st.write(f"HA: {r2[1]}")
+
+    with tab2:
+        st.write(f"**Usuario:** {st.session_state.username}")
+        if st.button("🚪 Cerrar Sesión", use_container_width=True):
+            st.session_state.authenticated = False
+            st.session_state.selected_reptile = None
+            st.rerun()
+
+    with tab3:
+        st.markdown("""
+        **RIARE Exotic's v4.0**
+
+        Sistema de gestión herpetológica optimizado para móvil.
+
+        Funciones:
+        • Registro de reptiles con pasos guiados
+        • Control de alimentación, peso y muda
+        • Notificaciones a Alexa y Home Assistant
+        • Estadísticas visuales
+        • Interfaz adaptativa
+        """)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ============================================================
+# BOTTOM NAVIGATION (RENDER AL FINAL PARA QUE ESTÉ ARRIBA EN Z-INDEX)
+# ============================================================
+# Usamos botones de Streamlit en lugar de HTML puro para que funcionen
+st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
+
+cols = st.columns(5)
+pages = [
+    ("dashboard", "🏠", "Inicio"),
+    ("reptiles", "🦎", "Reptiles"),
+    ("add", "➕", "Agregar"),
+    ("stats", "📊", "Stats"),
+    ("settings", "⚙️", "Ajustes")
+]
+
+for i, (page_id, icon, label) in enumerate(pages):
+    with cols[i]:
+        active_style = "primary" if st.session_state.current_page == page_id else "secondary"
+        if st.button(f"{icon}", key=f"nav_{page_id}", use_container_width=True, type=active_style):
+            st.session_state.current_page = page_id
+            if page_id == "add":
+                st.session_state.add_type = "menu"
+                st.session_state.step = 1
+            st.rerun()
+        st.caption(label, unsafe_allow_html=True)
